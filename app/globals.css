@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "../styles/crt.css";
+
+/* ─────────────────────────────────────────────────────────
+   Theme tokens — mirror constants/theme.ts
+   Per AGENTS.md §7.1, this is the source of truth for CSS.
+   TypeScript imports from constants/theme.ts; CSS reads here.
+   ───────────────────────────────────────────────────────── */
+@theme inline {
+  /* Surfaces */
+  --color-bg: #0a0a0f;
+  --color-panel: #12121a;
+  --color-border: #22222c;
+
+  /* Brand colors */
+  --color-terminal-green: #00ff41;
+  --color-amadeus-purple: #7b2fbe;
+  --color-divergence-cyan: #4f9eff;
+  --color-alert-red: #ff003c;
+  --color-steiner-amber: #ffb454;
+
+  /* Text */
+  --color-text-cold: #e8eaff;
+  --color-text-muted: #8a8a9e;
+  --color-text-dim: #4a4a5c;
+
+  /* Fonts (set via next/font in app/layout.tsx) */
+  --font-terminal: var(--font-vt323);
+  --font-ui: var(--font-share-tech-mono);
+  --font-display: var(--font-orbitron);
+}
+
+/* ─────────────────────────────────────────────────────────
+   Base styles
+   ───────────────────────────────────────────────────────── */
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text-cold);
+  font-family: var(--font-ui), ui-monospace, monospace;
+}
+
+::selection {
+  background: var(--color-terminal-green);
+  color: var(--color-bg);
+}
+
+/* Custom scrollbar — terminal feel */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-dim);
+}

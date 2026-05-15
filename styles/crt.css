@@ -1,0 +1,178 @@
+/**
+ * CRT / Terminal effects for Future Gadget Lab.
+ *
+ * Per AGENTS.md §7.2 — use these classes for all retro effects.
+ * Never inline these styles in components.
+ *
+ *   .crt-frame       wrapper that paints scanlines + faint glow
+ *   .crt-scanlines   horizontal scanline overlay (use on its own or with .crt-frame)
+ *   .crt-flicker     subtle brightness flicker animation
+ *   .glitch-text     RGB-split glitch on text (apply data-text="...")
+ *   .terminal-cursor blinking block cursor (::after)
+ */
+
+/* ─────────────────────────────────────────────────────────
+   Scanlines — layered repeating linear gradient
+   ───────────────────────────────────────────────────────── */
+.crt-scanlines {
+  position: relative;
+}
+.crt-scanlines::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.25) 0px,
+    rgba(0, 0, 0, 0.25) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 1;
+}
+
+/* ─────────────────────────────────────────────────────────
+   CRT frame — scanlines + soft vignette + inner phosphor glow
+   ───────────────────────────────────────────────────────── */
+.crt-frame {
+  position: relative;
+  border: 1px solid var(--color-border);
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(0, 255, 65, 0.04) 0%,
+      transparent 70%
+    ),
+    var(--color-panel);
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 255, 65, 0.06);
+}
+.crt-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Subtle CRT brightness flicker
+   ───────────────────────────────────────────────────────── */
+@keyframes crt-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  3% {
+    opacity: 0.92;
+  }
+  6% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 1;
+  }
+  49% {
+    opacity: 0.95;
+  }
+  51% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.97;
+  }
+  82% {
+    opacity: 1;
+  }
+}
+.crt-flicker {
+  animation: crt-flicker 6s infinite;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Glitch text — RGB split with jitter
+   Usage: <span class="glitch-text" data-text="EL PSY KONGROO">EL PSY KONGROO</span>
+   ───────────────────────────────────────────────────────── */
+.glitch-text {
+  position: relative;
+  display: inline-block;
+}
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.glitch-text::before {
+  color: var(--color-alert-red);
+  transform: translate(-1px, 0);
+  clip-path: inset(0 0 60% 0);
+  animation: glitch-anim-1 3s infinite linear alternate-reverse;
+}
+.glitch-text::after {
+  color: var(--color-divergence-cyan);
+  transform: translate(1px, 0);
+  clip-path: inset(60% 0 0 0);
+  animation: glitch-anim-2 2s infinite linear alternate-reverse;
+}
+@keyframes glitch-anim-1 {
+  0%, 90%, 100% { transform: translate(0, 0); }
+  92% { transform: translate(-2px, -1px); }
+  94% { transform: translate(2px, 1px); }
+  96% { transform: translate(-1px, 0); }
+}
+@keyframes glitch-anim-2 {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  90% { transform: translate(2px, 1px); }
+  93% { transform: translate(-2px, -1px); }
+  95% { transform: translate(1px, 0); }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Blinking terminal cursor (apply to element with text content)
+   ───────────────────────────────────────────────────────── */
+.terminal-cursor::after {
+  content: "▊";
+  display: inline-block;
+  margin-left: 0.15em;
+  animation: terminal-blink 1.1s steps(1) infinite;
+  color: var(--color-terminal-green);
+}
+@keyframes terminal-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Phosphor glow utility for text
+   ───────────────────────────────────────────────────────── */
+.phosphor-green {
+  color: var(--color-terminal-green);
+  text-shadow:
+    0 0 4px rgba(0, 255, 65, 0.8),
+    0 0 12px rgba(0, 255, 65, 0.4);
+}
+.phosphor-cyan {
+  color: var(--color-divergence-cyan);
+  text-shadow:
+    0 0 4px rgba(79, 158, 255, 0.8),
+    0 0 12px rgba(79, 158, 255, 0.4);
+}
+.phosphor-purple {
+  color: var(--color-amadeus-purple);
+  text-shadow:
+    0 0 4px rgba(123, 47, 190, 0.8),
+    0 0 12px rgba(123, 47, 190, 0.4);
+}
