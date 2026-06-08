@@ -130,8 +130,9 @@ function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming: boolea
 // ─── Page ─────────────────────────────────────────────────────
 export default function AmadeusPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  // Lazy initializer: runs once on mount, reads localStorage without an effect.
-  const [messages, setMessages] = useState<Message[]>(() => loadHistory());
+  // Start empty to match the server render (avoids hydration mismatch).
+  // History is loaded from localStorage after mount in the useEffect below.
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
@@ -139,6 +140,13 @@ export default function AmadeusPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load localStorage history after mount (not during render — avoids SSR mismatch).
+  useEffect(() => {
+    const history = loadHistory();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (history.length > 0) setMessages(history);
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setStatus("online"), 2200);

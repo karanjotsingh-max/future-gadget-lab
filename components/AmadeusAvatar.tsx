@@ -21,10 +21,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // ── Camera helper ──────────────────────────────────────────────────
 // Runs inside Canvas; aims the default camera at head height once.
+// Model is NOT offset — head is at world y ≈ 1.4 (natural VRM height).
 function CameraLookAt() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.lookAt(0, 1.45, 0);
+    camera.lookAt(0, 1.4, 0);
   }, [camera]);
   return null;
 }
@@ -53,8 +54,8 @@ function VRMScene({ isSpeaking }: SceneProps) {
 
   useEffect(() => {
     if (!vrm) return;
-    // Drop the model down so the head sits in the centre of the frame.
-    vrm.scene.position.set(0, -1.45, 0);
+    // Keep model at y=0 (feet on floor). Camera aimed at y=1.4 (head height).
+    vrm.scene.position.set(0, 0, 0);
   }, [vrm]);
 
   // useFrame receives (state, delta) — delta is seconds since last frame.
@@ -135,7 +136,7 @@ export function AmadeusAvatar({ isSpeaking, isOnline }: Props) {
        */}
       <Canvas
         gl={{ alpha: true, antialias: true }}
-        camera={{ position: [0, 1.45, 0.7], fov: 32 }}
+        camera={{ position: [0, 1.6, 1.0], fov: 35 }}
         style={{
           filter: isOnline
             ? "drop-shadow(0 0 18px rgba(123,47,190,0.5))"
