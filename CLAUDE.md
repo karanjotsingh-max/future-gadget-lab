@@ -8,22 +8,55 @@
 ## Current Position
 
 **Phase 1 — Amadeus chatbot**
-**Last completed step: 1.3d** — Full emotion-driven sprite avatar (VN sprites + mouth toggle + body animation)
+**Last completed step: 1.3d** — Full emotion-driven sprite avatar + prompt v1.3.1 tuned and tested
 **Next step: 1.4** — Supabase auth + messages table
 
 ---
 
-## What Was Built This Session
+## What Was Built (all sessions)
 
 | Commit | What |
 |---|---|
 | `feat: step 1.3d` | Prompt v1.2.0 + API emotion extraction + page emotion state + avatar EMOTION_CONFIGS |
-| `refactor: prompt v1.3.0` | Slim system prompt (~50% shorter); replace speech-pattern rules with 5 few-shot pairs in `AMADEUS_FEW_SHOT`; inject in API route |
 | `fix: scale up avatar animation amplitudes` | Idle float/sway now visible (was ±4px, now ±13px) |
 | `feat: sprite-swap avatar system + rename script` | AmadeusAvatar loads emotion-specific PNGs; 5Hz mouth toggle during TTS |
 | `fix: handle CRS_JLF Back sprite naming` | scripts/rename-sprites.mjs correctly maps Back sprite |
 | `fix: correct sprite cropping, remove pendulum rotation, fix CRT scanline overlap and sRGB colors` | Camera z=3, correct aspect ratio (852×1411), z-rotation removed, SRGBColorSpace on textures, zIndex:10 lifts avatar above `.crt-frame::after` |
 | `chore: ignore non-sprite files in public/sprites` | .gitignore updated for .gif/.wav/_nul from Drive pack |
+| `refactor: prompt v1.3.0` | Slim system prompt (~50% shorter); replace speech-pattern rules with 6 few-shot pairs; fix character: Amadeus (SG0 AI) not real Kurisu |
+| `fix: prompt v1.3.1` | Cut max_tokens 600→220; terse 1-2 sentence replies; shorten few-shot examples; add `scripts/test-emotions.mjs` |
+| `fix: in-world error message + switch model to qwen3-32b` | Replace `[CONNECTION ERROR: ...]` bubble with `...[ TRANSMISSION INTERRUPTED ]`; API 500 returns plain text |
+| `chore: switch model to llama-4-scout` | qwen3-32b abandoned (slow — thinking mode); switched to `meta-llama/llama-4-scout-17b-16e-instruct` |
+
+---
+
+## Current LLM Setup
+
+| Key | Value |
+|---|---|
+| Provider | Groq API |
+| Model | `meta-llama/llama-4-scout-17b-16e-instruct` (Llama 4, MoE, fast) |
+| `max_tokens` | 220 |
+| `temperature` | 0.85 |
+| Free tier limit | 100k TPD per model (separate bucket from llama-3.3-70b) |
+| Prompt version | v1.3.1 |
+| Few-shot pairs | 6 (in `AMADEUS_FEW_SHOT`, injected between system + user messages) |
+
+**Tested emotion accuracy (manual):** ~80% correct tags, all replies short + in-character.
+Known misfire: "Feelings for Okabe?" returns `Tired` instead of `Embrassed` — acceptable.
+
+### Gemini migration (future option)
+If Groq limits become a problem: Gemini 2.0 Flash via AI Studio free tier gives **1M TPD** (10×).
+Can be done via the OpenAI-compatible endpoint — no new npm package needed:
+```ts
+// lib/groq.ts — swap to Gemini without changing route code
+new Groq({
+  apiKey: process.env.GEMINI_API_KEY,
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+})
+// GROQ_MODEL = "gemini-2.0-flash"
+```
+Add `GEMINI_API_KEY` to `.env.local` and `.env.example`. Update `AGENTS.md` stack table.
 
 ---
 
@@ -54,7 +87,7 @@
 app/
   (marketing)/page.tsx      ← Landing — world line meter + 3 gadget cards
   amadeus/page.tsx          ← Video-call UI ("use client"), messages state, TTS, emotion state
-  api/amadeus/chat/route.ts ← Streaming Groq route; buffers first chunks to extract [Emotion];
+  api/amadeus/chat/route.ts ← Streaming route; buffers first chunks to extract [Emotion];
                                sends X-Amadeus-Emotion header before streaming clean text
   layout.tsx                ← Site shell: nav header + footer
 
@@ -64,8 +97,8 @@ components/
   WorldLineMeter.tsx        ← Animated divergence meter in the nav
 
 lib/
-  groq.ts                   ← Single Groq client (lazy init)
-  prompts/amadeus.ts        ← Prompt v1.2.0 + CANONICAL_EMOTIONS + AmadeusEmotion type
+  groq.ts                   ← Single Groq client (lazy init); GROQ_MODEL constant here
+  prompts/amadeus.ts        ← Prompt v1.3.1 + AMADEUS_FEW_SHOT + CANONICAL_EMOTIONS + Zod schemas
   supabase/
     server.ts               ← Server-side Supabase client (reads cookies)
     client.ts               ← Browser-side Supabase client (public anon key)
@@ -79,6 +112,7 @@ public/
 
 scripts/
   rename-sprites.mjs        ← Maps CRS_JL*.png from Drive pack → kurisu-{slug}.png
+  test-emotions.mjs         ← Fires 20 trigger messages at local API; checks X-Amadeus-Emotion header
 
 constants/theme.ts          ← Color tokens, font variables, motion presets
 styles/crt.css              ← .crt-frame .crt-scanlines .crt-flicker .glitch-text
@@ -104,7 +138,9 @@ SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_
 - Sprites are loaded per-emotion via `THREE.TextureLoader` in `useEffect`. On slow connections there's a brief flash of the fallback `kurisu.png` between emotion changes until the new sprite loads. Can fix with preloading if needed.
 - Dev server on port 3000 with Turbopack (`npm run dev`).
 - `THREE.Clock` deprecation warning in browser console — from R3F internals, harmless.
-- The `alphaTest={0.1}` on `meshBasicMaterial` cuts out semi-transparent pixels. VN sprites have transparent backgrounds — should work correctly.
+- `alphaTest={0.1}` on `meshBasicMaterial` cuts out semi-transparent pixels. VN sprites have transparent backgrounds — works correctly.
+- Groq free tier: 100k TPD. Running `test-emotions.mjs` (20 requests) burns ~1,500 tokens — run sparingly.
+- **Do not use `Invoke-WebRequest` to test the API** — it hangs on chunked streaming responses. Use `node -e "fetch(...)"` instead.
 
 ---
 
@@ -119,6 +155,7 @@ SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_
 | Guest mode stays | `localStorage` still used when not signed in |
 
 Use `fgl-new-migration` skill before writing any SQL.
+Use `fgl-new-component` skill before building `AuthModal`.
 
 ---
 

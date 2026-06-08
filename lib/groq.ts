@@ -35,4 +35,4 @@ export const groq = {
 };
 
 /** The model used for all LLM calls. Change here to update everywhere. */
-export const GROQ_MODEL = "qwen/qwen3-32b";
+export const GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
