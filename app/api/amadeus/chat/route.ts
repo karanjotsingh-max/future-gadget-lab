@@ -161,9 +161,9 @@ export async function POST(req: NextRequest) {
       `[amadeus/chat] fatal error (prompt v${AMADEUS_PROMPT_VERSION}):`,
       err
     );
-    return new Response(
-      JSON.stringify({ error: "Amadeus system error. Try again." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response("TRANSMISSION_INTERRUPTED", {
+      status: 500,
+      headers: { "Content-Type": "text/plain" },
+    });
   }
 }

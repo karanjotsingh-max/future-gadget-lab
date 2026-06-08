@@ -184,7 +184,7 @@ export default function AmadeusPage() {
 
     const history = [
       ...messages
-        .filter((m) => m.content.trim().length > 0 && !m.content.startsWith("[CONNECTION ERROR"))
+        .filter((m) => m.content.trim().length > 0 && !m.content.startsWith("...[ TRANSMISSION INTERRUPTED ]"))
         .map(({ role, content }) => ({ role, content })),
       { role: userMsg.role, content: userMsg.content },
     ];
@@ -222,16 +222,16 @@ export default function AmadeusPage() {
 
       setMessages((prev) => {
         const clean = prev.filter(
-          (m) => m.content.trim().length > 0 && !m.content.startsWith("[CONNECTION ERROR")
+          (m) => m.content.trim().length > 0 && !m.content.startsWith("...[ TRANSMISSION INTERRUPTED ]")
         );
         saveHistory(clean);
         return prev;
       });
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "Transmission error.";
+      console.error("[amadeus] transmission error:", err);
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId ? { ...m, content: `[CONNECTION ERROR: ${errMsg}]` } : m
+          m.id === assistantId ? { ...m, content: "...[ TRANSMISSION INTERRUPTED ]" } : m
         )
       );
     } finally {
