@@ -23,9 +23,10 @@
 | Language | TypeScript (strict) | Type safety, AI-friendly |
 | Styling | Tailwind CSS v4 | Utility-first, themeable |
 | Animation | Framer Motion | Declarative, scoped to client |
-| Auth + DB | Supabase | Free tier covers everything |
+| Auth + DB | Supabase (`@supabase/supabase-js`) | Free tier covers everything |
 | Vector DB | Supabase pgvector | Same DB, one less service |
-| LLM | Groq API (Llama 3.3 70B) | Free, fast, OpenAI-compatible |
+| LLM | Groq API (`groq-sdk`, Llama 3.3 70B) | Free, fast, OpenAI-compatible |
+| Validation | Zod | Runtime schema validation for LLM output + API input |
 | Hosting | Vercel | Free tier, Next.js native |
 
 Do NOT introduce new dependencies without updating this table. If you must, justify in the PR description.
@@ -44,19 +45,19 @@ future-gadget-lab/
 ├── package.json, tsconfig.json
 ├── app/
 │   ├── (marketing)/         # Landing page route group
-│   ├── d-mail/              # Phase 1 feature
-│   ├── amadeus/             # Phase 2 feature
+│   ├── amadeus/             # Phase 1 feature — Kurisu video-call chatbot
+│   ├── d-mail/              # Phase 2 feature — timeline simulator
 │   ├── lab-radio/           # Phase 3 feature
 │   ├── lab-notes/           # User profile / history
 │   └── api/                 # Route handlers (server-only)
-│       ├── d-mail/
-│       └── amadeus/
+│       ├── amadeus/
+│       └── d-mail/
 ├── components/              # Reusable UI (PascalCase)
 ├── lib/
 │   ├── groq.ts              # Single Groq client wrapper
 │   ├── supabase/            # server.ts + client.ts
 │   ├── prompts/             # ALL LLM prompts live here
-│   └── rag/                 # Embedding + retrieval helpers
+│   └── rag/                 # Embedding + retrieval helpers (Phase 2)
 ├── constants/
 │   └── theme.ts             # Color tokens, fonts, motion
 ├── styles/

@@ -37,19 +37,19 @@ export default function Home() {
         className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
       >
         <GadgetCard
+          id="#002"
+          name="Amadeus"
+          description="Video call with an AI reconstruction of Kurisu Makise. Personality-locked, lore-aware, streaming responses — just like the show."
+          href="/amadeus"
+          status="online"
+          flavor="PHASE 1"
+        />
+        <GadgetCard
           id="#001"
           name="D-Mail Terminal"
           description="Compose a 36-character message to your past self. The AI worldline computer generates three divergent timelines and an updated Divergence Meter value."
           href="/d-mail"
           status="in-development"
-          flavor="PHASE 1"
-        />
-        <GadgetCard
-          id="#002"
-          name="Amadeus"
-          description="Chat with an AI reconstruction of Kurisu Makise. Personality-locked, lore-aware, with persistent memory across sessions."
-          href="/amadeus"
-          status="offline"
           flavor="PHASE 2"
         />
         <GadgetCard
@@ -67,7 +67,7 @@ export default function Home() {
           className="text-[11px] tracking-[0.3em] text-(--color-text-dim)"
           style={{ fontFamily: "var(--font-ui)" }}
         >
-          {">"} STATUS: FOUNDATION COMPLETE / PHASE 1 IN PROGRESS
+          {">"} STATUS: AMADEUS ONLINE / D-MAIL IN DEVELOPMENT
           <br />
           {">"} WARNING: Tampering with the past has consequences. Reading
           Steiner not guaranteed.

@@ -11,8 +11,8 @@ A unified "Future Gadget Lab" web experience hosting three interconnected anime-
 ```
 futuregadgetlab.app
 ├── /                  → Lab landing, world line meter, gadget cards
-├── /d-mail            → D-Mail Terminal (Phase 1)
-├── /amadeus           → Amadeus chat with Kurisu (Phase 2)
+├── /amadeus           → Amadeus video-call chatbot (Phase 1)
+├── /d-mail            → D-Mail Terminal (Phase 2)
 ├── /lab-radio         → Themed playlists player (Phase 3)
 └── /lab-notes         → "Lab Member" profile + saved history
 ```
@@ -56,8 +56,8 @@ API keys live ONLY in Next.js server routes — the browser never sees them. See
 | Phase | What | Timeline | Ships |
 |---|---|---|---|
 | 0 | Foundation (`AGENTS.md`, README, license, env, gitignore) | Done | This commit |
-| 1 | D-Mail Terminal | Week 1-2 | MVP demo + LinkedIn post #1 |
-| 2 | Amadeus chatbot + RAG | Week 3-4 | Deploy + LinkedIn post #2 |
+| 1 | Amadeus video-call chatbot (Kurisu AI) | Week 1-2 | MVP demo + LinkedIn post #1 |
+| 2 | D-Mail Terminal + RAG upgrade for Amadeus | Week 3-4 | Deploy + LinkedIn post #2 |
 | 3 | Lab Radio + Lab Notes | Week 5 | Final deploy + LinkedIn post #3 |
 
 ---
@@ -68,9 +68,9 @@ API keys live ONLY in Next.js server routes — the browser never sees them. See
 |---|---|---|---|
 | 0 — Foundation docs | Complete | 2026-05-14 | AGENTS.md, README, CONTRIBUTING, LICENSE, .env.example, .gitignore |
 | 1.1 — Next.js scaffold + theme + landing | Complete | 2026-05-15 | See Phase 1.1 recap below |
-| 1.2 — Groq backend + D-Mail API | Not started | — | Next up |
-| 1.3 — D-Mail UI + Divergence Meter | Not started | — | |
-| 1.4 — Supabase auth + storage | Not started | — | |
+| 1.2 — Phase swap docs + Groq client + Amadeus API + prompt | Complete | 2026-06-08 | lib/groq.ts, lib/prompts/amadeus.ts, app/api/amadeus/chat/route.ts |
+| 1.3 — Amadeus video-call UI + Supabase clients | Complete | 2026-06-08 | app/amadeus/page.tsx, lib/supabase/server.ts + client.ts |
+| 1.4 — Supabase auth + message persistence | Not started | — | Guest localStorage done; Supabase DB next |
 | 1.5 — Ship: deploy + LinkedIn post #1 | Not started | — | |
 
 ---
@@ -115,74 +115,74 @@ API keys live ONLY in Next.js server routes — the browser never sees them. See
 - `npm run dev` — ready in 6s
 
 ### Status of the three gadget cards
-- Card #001 — D-Mail Terminal: **IN DEVELOPMENT** (clickable, leads to 404 until Phase 1.3)
-- Card #002 — Amadeus: **OFFLINE** (locked, Phase 2)
+- Card #001 — D-Mail Terminal: **IN DEVELOPMENT** (locked, Phase 2)
+- Card #002 — Amadeus: **IN DEVELOPMENT** → will become **ONLINE** in Phase 1.4
 - Card #003 — Lab Radio: **OFFLINE** (locked, Phase 3)
 
 ---
 
-## Phase 1: D-Mail Terminal (Ship First — Week 1-2)
+## Phase 1: Amadeus — Kurisu Video-Call Chatbot (Ship First — Week 1-2)
 
-The core killer feature. Ship this alone if needed; it's the LinkedIn-worthy demo.
+The flagship feature. A video-call style interface to chat with an AI Kurisu Makise (Amadeus system). Streaming responses, Steins;Gate lore baked into the system prompt, CRT aesthetic.
 
 ### User Flow
-1. User types a "past event" they want to change (e.g., "I didn't go to that interview")
-2. Composes a "D-Mail" (max 36 chars, like the show)
-3. AI generates 3 divergent timelines with a **World Line Divergence Meter** value
-4. Each timeline has a story, a divergence number, and a "Reading Steiner" memory flag
-5. Save to "Lab Notes" if logged in; `localStorage` if guest
+1. User opens `/amadeus` — sees "CONNECTING..." animation, then "AMADEUS SYSTEM ONLINE"
+2. A CRT-framed screen shows a stylized geometric Kurisu avatar (CSS only, no copyrighted art)
+3. User types a message, AI responds as Kurisu in streaming text with a blinking cursor
+4. Conversation history saved to `localStorage` (guest); Supabase when logged in
+5. "El Psy Kongroo" sign-off closes each session
+
+### Key Files
+- `app/amadeus/page.tsx` — video-call UI, streaming chat, Framer Motion connection sequence
+- `app/api/amadeus/chat/route.ts` — streaming POST, Zod-validated input, in-memory rate limit
+- `lib/groq.ts` — Groq client wrapper
+- `lib/prompts/amadeus.ts` — versioned Kurisu system prompt with baked-in lore
+- `lib/supabase/server.ts` + `client.ts` — Supabase SSR clients
+
+### LLM Strategy
+Streaming text via `groq.chat.completions.create({ stream: true })`. No structured JSON needed — Kurisu speaks in prose. RAG will be added in Phase 2 once pgvector is set up.
+
+### Phase 1 Todos
+- [x] **1.1** Next.js + TS + Tailwind scaffold, theme tokens, CRT styling, base layout with world line meter — *2026-05-15*
+- [x] **1.2** Phase order swap: Amadeus → Phase 1, D-Mail → Phase 2 — *2026-06-08*
+- [ ] **1.3** Groq client wrapper, Amadeus streaming API route, Kurisu system prompt
+- [ ] **1.4** Amadeus video-call page, Framer Motion connection sequence, streaming chat UI
+- [ ] **1.5** Supabase project setup, magic link auth, messages table, guest-to-user migration
+- [ ] **1.6** Vercel deploy, README with demo GIF, LinkedIn post #1
+
+---
+
+## Phase 2: D-Mail Terminal + Amadeus RAG Upgrade (Week 3-4)
+
+D-Mail timeline simulator plus a RAG upgrade for Amadeus (lore-aware responses via pgvector).
+
+### D-Mail Features
+- User types a "past event" they want to change
+- Composes a "D-Mail" (max 36 chars, like the show)
+- AI generates 3 divergent timelines with World Line Divergence Meter values
+- Save to "Lab Notes" if logged in; `localStorage` if guest
+
+### Amadeus RAG Upgrade
+- Curated Steins;Gate lore corpus (characters, world lines, key events)
+- Embedded into Supabase pgvector, retrieved at query time
+- Replaces the baked-in lore in the system prompt with dynamic retrieval
 
 ### Key Files
 - `app/d-mail/page.tsx` — terminal-style UI
 - `app/api/d-mail/route.ts` — Groq call with structured JSON output
 - `components/DivergenceMeter.tsx` — animated number display
-- `lib/groq.ts` — Groq client wrapper
 - `lib/prompts/dmail.ts` — system prompt + Zod schema
-- `supabase/migrations/001_timelines.sql` — timeline storage table
-
-### LLM Strategy
-Force JSON output via Groq's `response_format: { type: "json_object" }`. Validate with Zod schema:
-
-```ts
-{
-  timelines: [
-    { divergence: number, summary: string, fullStory: string, readingSteinerNote: string },
-    // ...exactly 3 timelines
-  ]
-}
-```
-
-### Phase 1 Todos
-- [x] **1.1** Next.js + TS + Tailwind scaffold, theme tokens, CRT styling, base layout with world line meter — *2026-05-15*
-- [ ] **1.2** Groq client wrapper, D-Mail API route with structured JSON output, prompt engineering
-- [ ] **1.3** D-Mail terminal page, divergence meter component, timeline result cards, localStorage save
-- [ ] **1.4** Supabase project setup, magic link auth, timelines table, guest-to-user migration
-- [ ] **1.5** Vercel deploy, README with demo GIF, LinkedIn post #1
-
----
-
-## Phase 2: Amadeus (Week 3-4)
-
-AI Kurisu Makise chatbot with persistent memory and lore-aware responses.
-
-### Features
-- Personality-locked system prompt (Kurisu's tsundere science energy)
-- Conversation persists in Supabase (logged in) or `localStorage` (guest)
-- **RAG over Steins;Gate lore**: curated lore corpus (characters, world lines, terms), embedded into Supabase pgvector
-- Streaming responses for that "Amadeus is thinking" feel
-
-### Key Files
-- `app/amadeus/page.tsx` — chat UI with hologram avatar
-- `app/api/amadeus/chat/route.ts` — RAG retrieval + Groq streaming
 - `lib/rag/embed.ts` — embedding helper
 - `lib/rag/retrieve.ts` — pgvector similarity search
-- `supabase/migrations/002_amadeus.sql` — messages + lore_chunks tables
-- `scripts/seed-lore.ts` — one-time script to populate lore embeddings
+- `supabase/migrations/001_timelines.sql` — timeline storage table
+- `supabase/migrations/002_lore_chunks.sql` — RAG lore corpus table
+- `scripts/seed-lore.ts` — one-time lore embedding script
 
 ### Phase 2 Todos
-- [ ] Amadeus chat page with hologram avatar, streaming message UI, conversation history
+- [ ] D-Mail terminal page + API route with structured JSON output + Zod schema
+- [ ] DivergenceMeter animated component + timeline result cards
 - [ ] Lore corpus curation, embedding script, pgvector setup, retrieval helper
-- [ ] Streaming chat route with Kurisu system prompt + RAG context injection
+- [ ] Amadeus RAG upgrade: swap baked-in lore for dynamic retrieval
 - [ ] Deploy + technical writeup + LinkedIn post #2
 
 ---
