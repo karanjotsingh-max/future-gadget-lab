@@ -4,7 +4,8 @@
     "stop": [
       {
         "command": "node .cursor/hooks/auto-commit-check.js",
-        "timeout": 15
+        "timeout": 15,
+        "loop_limit": 1
       }
     ]
   }
