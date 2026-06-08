@@ -7,12 +7,20 @@
  *   - Top ~75 vh : video feed panel — avatar centred, full-width
  *   - Bottom ~25 vh : compact chat strip — messages + input
  * Voice:  Web Speech API speaks every completed response
- * Avatar: CSS-only geometric Kurisu with depth, HUD, talking animation
+ * Avatar: React Three Fiber + VRM 3D model (mouth/eye animation)
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ChatMessage } from "@/lib/prompts/amadeus";
+
+// Dynamically imported with ssr:false — Three.js/WebGL is browser-only.
+// The fallback renders nothing while the JS bundle loads.
+const AmadeusAvatar = dynamic(
+  () => import("@/components/AmadeusAvatar").then((m) => m.AmadeusAvatar),
+  { ssr: false, loading: () => null }
+);
 
 // ─── Types ────────────────────────────────────────────────────
 type ConnectionStatus = "connecting" | "online" | "error";
@@ -91,68 +99,6 @@ function HudCorner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
   return <div className={`${base} ${sides}`} />;
 }
 
-// ─── Kurisu avatar ────────────────────────────────────────────
-function KurisuAvatar({
-  status,
-  isSpeaking,
-}: {
-  status: ConnectionStatus;
-  isSpeaking: boolean;
-}) {
-  const online = status === "online";
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: "320px", height: "420px" }}>
-      {/* Speaking glow ring behind the image */}
-      <AnimatePresence>
-        {isSpeaking && (
-          <motion.div
-            key="spk-glow"
-            className="absolute inset-0 rounded-lg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.4, 0.1, 0.4] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, repeat: Infinity }}
-            style={{ boxShadow: "0 0 40px 12px rgba(123,47,190,0.45)" }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Actual Kurisu image */}
-      <motion.img
-        src="/kurisu.png"
-        alt="Kurisu Makise — Amadeus"
-        className="relative z-10 h-full w-full object-contain"
-        animate={online ? { opacity: 1 } : { opacity: 0.25 }}
-        transition={{ duration: 0.8 }}
-        style={{
-          filter: online
-            ? "drop-shadow(0 0 18px rgba(123,47,190,0.5))"
-            : "drop-shadow(0 0 6px rgba(123,47,190,0.2)) grayscale(0.6)",
-        }}
-      />
-
-      {/* Scan line overlay */}
-      {online && (
-        <motion.div
-          className="pointer-events-none absolute inset-x-0 z-20 h-px bg-(--color-amadeus-purple)/30"
-          animate={{ top: ["5%", "95%", "5%"] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          style={{ position: "absolute" }}
-        />
-      )}
-
-      {/* CRT vignette overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 z-20 rounded-lg"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(10,10,15,0.55) 100%)",
-        }}
-      />
-    </div>
-  );
-}
 
 // ─── Single message row ───────────────────────────────────────
 function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming: boolean }) {
@@ -184,7 +130,8 @@ function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming: boolea
 // ─── Page ─────────────────────────────────────────────────────
 export default function AmadeusPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Lazy initializer: runs once on mount, reads localStorage without an effect.
+  const [messages, setMessages] = useState<Message[]>(() => loadHistory());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
@@ -342,8 +289,8 @@ export default function AmadeusPage() {
           </button>
         </div>
 
-        {/* Avatar */}
-        <KurisuAvatar status={status} isSpeaking={isSpeaking} />
+        {/* 3D Avatar */}
+        <AmadeusAvatar isOnline={status === "online"} isSpeaking={isSpeaking} />
 
         {/* Name plate */}
         <AnimatePresence mode="wait">
