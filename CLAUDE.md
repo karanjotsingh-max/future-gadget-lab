@@ -18,6 +18,7 @@
 | Commit | What |
 |---|---|
 | `feat: step 1.3d` | Prompt v1.2.0 + API emotion extraction + page emotion state + avatar EMOTION_CONFIGS |
+| `refactor: prompt v1.3.0` | Slim system prompt (~50% shorter); replace speech-pattern rules with 5 few-shot pairs in `AMADEUS_FEW_SHOT`; inject in API route |
 | `fix: scale up avatar animation amplitudes` | Idle float/sway now visible (was ±4px, now ±13px) |
 | `feat: sprite-swap avatar system + rename script` | AmadeusAvatar loads emotion-specific PNGs; 5Hz mouth toggle during TTS |
 | `fix: handle CRS_JLF Back sprite naming` | scripts/rename-sprites.mjs correctly maps Back sprite |

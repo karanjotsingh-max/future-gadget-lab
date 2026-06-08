@@ -15,6 +15,7 @@ import { NextRequest } from "next/server";
 import { groq, GROQ_MODEL } from "@/lib/groq";
 import {
   AMADEUS_SYSTEM_PROMPT,
+  AMADEUS_FEW_SHOT,
   ChatRequestSchema,
   AMADEUS_PROMPT_VERSION,
   CANONICAL_EMOTIONS,
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
       model: GROQ_MODEL,
       messages: [
         { role: "system", content: AMADEUS_SYSTEM_PROMPT },
+        ...AMADEUS_FEW_SHOT,
         ...messages,
       ],
       stream: true,
