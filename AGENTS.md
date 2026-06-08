@@ -129,8 +129,17 @@ Reading Steiner · El Psy Kongroo · world line (two words, lowercase) · Hououi
 ## Collaboration (AI agents)
 
 - Karan is learning — explain every non-obvious decision before writing code
-- Use the `fgl-step-by-step` skill when starting any new task
-- Use the `fgl-new-prompt` skill when creating a new LLM prompt file
+- Use the correct skill before starting any task (see table below)
+
+| Situation | Skill to use |
+|---|---|
+| Starting any new task | `fgl-step-by-step` |
+| Creating a new React component | `fgl-new-component` |
+| Creating a new API route handler | `fgl-new-api-route` |
+| Creating a new LLM prompt file | `fgl-new-prompt` |
+| Writing a Supabase migration | `fgl-new-migration` |
+| Adding RAG retrieval to a route | `fgl-rag-retrieval` |
+| Deploying a phase to Vercel | `fgl-deploy` |
 
 ---
 
