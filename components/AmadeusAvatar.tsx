@@ -62,47 +62,50 @@ const EMOTION_SLUG: Record<string, string> = {
 };
 
 // ── Emotion animation config ───────────────────────────────────────
-// Calibrated for 320×420 canvas at z=2, fov=60 (1 unit ≈ 182 px).
+// Calibrated for 320×420 canvas, camera at z=3, fov=60 (sprite 852×1411 px).
+// No Z-rotation — flat 2D sprites look unnatural when tilted.
+// Only Y-float, subtle X-shake for Angry, and yOffset for mood height.
 type EmotionConfig = {
   floatAmp: number;    // Y float amplitude
   floatFreq: number;   // Y float frequency (Hz)
-  swayAmp: number;     // Z rotation sway amplitude (radians)
-  swayFreq: number;    // Z rotation sway frequency
+  swayAmp: number;     // Z rotation amplitude — only for Embrassed head-wiggle
+  swayFreq: number;    // Z rotation frequency
   xShakeAmp: number;   // X shake amplitude — Angry only
   xShakeFreq: number;
   yOffset: number;     // constant Y position offset
-  zRotOffset: number;  // constant Z rotation offset
   opacity: number;     // material opacity [0–1]
 };
 
 const D: EmotionConfig = {
-  floatAmp: 0.070, floatFreq: 0.55,
-  swayAmp: 0.018,  swayFreq: 0.38,
+  floatAmp: 0.040, floatFreq: 0.50,
+  swayAmp: 0,      swayFreq: 0,
   xShakeAmp: 0, xShakeFreq: 0,
-  yOffset: 0, zRotOffset: 0, opacity: 1,
+  yOffset: 0, opacity: 1,
 };
 
 const EMOTION_CONFIGS: Record<string, EmotionConfig> = {
   "Default":           { ...D },
   "Very Default":      { ...D },
-  "Calm":              { ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25 },
-  "Serious":           { ...D, floatAmp: 0.028, floatFreq: 0.30, swayAmp: 0.006, swayFreq: 0.20 },
-  "Very Serious":      { ...D, floatAmp: 0.022, floatFreq: 0.25, swayAmp: 0.004, swayFreq: 0.15 },
-  "Interest":          { ...D, floatAmp: 0.085, floatFreq: 0.70, swayAmp: 0.022, swayFreq: 0.55, yOffset:  0.10, zRotOffset: -0.06 },
-  "Not Interest":      { ...D, floatAmp: 0.042, floatFreq: 0.40, swayAmp: 0.012, swayFreq: 0.30, yOffset: -0.08, zRotOffset:  0.045 },
-  "Very Not Interest": { ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25, yOffset: -0.10, zRotOffset:  0.060 },
-  "Fun":               { ...D, floatAmp: 0.120, floatFreq: 1.00, swayAmp: 0.032, swayFreq: 0.85, yOffset:  0.12 },
-  "Angry":             { ...D, floatAmp: 0.025, floatFreq: 0.50, swayAmp: 0.012, xShakeAmp: 0.080, xShakeFreq: 9.0 },
-  "Sad":               { ...D, floatAmp: 0.025, floatFreq: 0.25, swayAmp: 0.008, swayFreq: 0.20, yOffset: -0.15, zRotOffset: 0.06, opacity: 0.85 },
-  "Disappoint":        { ...D, floatAmp: 0.032, floatFreq: 0.30, swayAmp: 0.008, swayFreq: 0.22, yOffset: -0.10, zRotOffset: 0.050, opacity: 0.90 },
-  "Tired":             { ...D, floatAmp: 0.018, floatFreq: 0.18, swayAmp: 0.006, swayFreq: 0.14, yOffset: -0.08, zRotOffset: 0.040, opacity: 0.80 },
-  "Embrassed":         { ...D, floatAmp: 0.055, floatFreq: 0.60, swayAmp: 0.065, swayFreq: 3.50 },
-  "Very Embrassed":    { ...D, floatAmp: 0.060, floatFreq: 0.65, swayAmp: 0.090, swayFreq: 4.50 },
-  "Surprise":          { ...D, floatAmp: 0.050, floatFreq: 0.55, swayAmp: 0.016, swayFreq: 0.45, yOffset:  0.14, zRotOffset: -0.04 },
-  "Wink":              { ...D, floatAmp: 0.068, floatFreq: 0.55, swayAmp: 0.028, swayFreq: 0.50, yOffset:  0.05, zRotOffset: -0.05 },
-  "Sleep":             { ...D, floatAmp: 0.014, floatFreq: 0.18, swayAmp: 0.003, swayFreq: 0.12, yOffset: -0.12, zRotOffset:  0.04, opacity: 0.65 },
-  "Closed Sleep":      { ...D, floatAmp: 0.008, floatFreq: 0.14, swayAmp: 0.003, swayFreq: 0.10, yOffset: -0.16, zRotOffset:  0.05, opacity: 0.50 },
-  "Back":              { ...D, floatAmp: 0.055, floatFreq: 0.55, swayAmp: 0.011, swayFreq: 0.35, zRotOffset: 1.5, opacity: 0.35 },
+  "Calm":              { ...D, floatAmp: 0.020, floatFreq: 0.35 },
+  "Serious":           { ...D, floatAmp: 0.015, floatFreq: 0.30 },
+  "Very Serious":      { ...D, floatAmp: 0.012, floatFreq: 0.25 },
+  "Interest":          { ...D, floatAmp: 0.050, floatFreq: 0.65, yOffset:  0.06 },
+  "Not Interest":      { ...D, floatAmp: 0.025, floatFreq: 0.40, yOffset: -0.05 },
+  "Very Not Interest": { ...D, floatAmp: 0.020, floatFreq: 0.35, yOffset: -0.07 },
+  "Fun":               { ...D, floatAmp: 0.065, floatFreq: 0.90, yOffset:  0.08 },
+  "Angry":             { ...D, floatAmp: 0.015, floatFreq: 0.50, xShakeAmp: 0.055, xShakeFreq: 9.0 },
+  "Sad":               { ...D, floatAmp: 0.015, floatFreq: 0.25, yOffset: -0.08, opacity: 0.85 },
+  "Disappoint":        { ...D, floatAmp: 0.020, floatFreq: 0.30, yOffset: -0.06, opacity: 0.90 },
+  "Tired":             { ...D, floatAmp: 0.010, floatFreq: 0.18, yOffset: -0.05, opacity: 0.80 },
+  // Embrassed: fast Z-sway only — looks like a nervous head-wiggle on 2D sprite
+  "Embrassed":         { ...D, floatAmp: 0.028, floatFreq: 0.60, swayAmp: 0.018, swayFreq: 3.50 },
+  "Very Embrassed":    { ...D, floatAmp: 0.032, floatFreq: 0.65, swayAmp: 0.025, swayFreq: 4.50 },
+  "Surprise":          { ...D, floatAmp: 0.035, floatFreq: 0.55, yOffset:  0.08 },
+  "Wink":              { ...D, floatAmp: 0.040, floatFreq: 0.55, yOffset:  0.03 },
+  "Sleep":             { ...D, floatAmp: 0.008, floatFreq: 0.18, yOffset: -0.08, opacity: 0.65 },
+  "Closed Sleep":      { ...D, floatAmp: 0.005, floatFreq: 0.14, yOffset: -0.10, opacity: 0.50 },
+  // Back sprite already shows her turned — no rotation needed, slight dim only
+  "Back":              { ...D, floatAmp: 0.025, floatFreq: 0.45, opacity: 0.90 },
 };
 
 // ── 3D sprite scene ────────────────────────────────────────────────
@@ -131,14 +134,14 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
 
     loader.load(
       `/sprites/kurisu-${slug}.png`,
-      (t) => { baseTexRef.current = t; },
+      (t) => { t.colorSpace = THREE.SRGBColorSpace; baseTexRef.current = t; },
       undefined,
       () => { /* 404 — falls back to /kurisu.png in useFrame */ }
     );
 
     loader.load(
       `/sprites/kurisu-${slug}-open.png`,
-      (t) => { openTexRef.current = t; hasOpenRef.current = true; },
+      (t) => { t.colorSpace = THREE.SRGBColorSpace; openTexRef.current = t; hasOpenRef.current = true; },
       undefined,
       () => { /* no open variant — body sway used instead */ }
     );
@@ -170,21 +173,21 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
 
     // ── Body animation ────────────────────────────────────────────
     const targetY = Math.sin(t * cfg.floatFreq) * cfg.floatAmp + cfg.yOffset;
-    const targetZ = Math.sin(t * cfg.swayFreq)  * cfg.swayAmp  + cfg.zRotOffset;
+    // Z sway only for Embrassed head-wiggle; 0 for all other emotions
+    const targetZ = Math.sin(t * cfg.swayFreq) * cfg.swayAmp;
     const targetX = cfg.xShakeAmp > 0
       ? Math.sin(t * cfg.xShakeFreq) * cfg.xShakeAmp
       : 0;
 
-    if (isSpeaking) {
-      // When mouth sprites handle the talking, dial back body sway so
-      // it doesn't fight the texture toggle visually.
-      const f = hasOpenRef.current ? 0.25 : 1.0;
-      mesh.position.y = targetY + Math.sin(t * 14) * 0.022 * f;
-      mesh.rotation.z = targetZ + Math.sin(t * 11) * 0.030 * f;
+    if (isSpeaking && !hasOpenRef.current) {
+      // No mouth sprites: show speaking via subtle scale pulse only
+      mesh.position.y = targetY;
+      mesh.rotation.z = targetZ;
       mesh.position.x = targetX;
-      mesh.scale.y    = 1 + Math.sin(t * 18) * 0.014 * f;
-      mesh.scale.x    = 1 - Math.sin(t * 18) * 0.007 * f;
+      mesh.scale.y    = 1 + Math.sin(t * 18) * 0.010;
+      mesh.scale.x    = 1 - Math.sin(t * 18) * 0.005;
     } else {
+      // Mouth sprites active (or idle): smooth lerp — no jitter
       mesh.position.y += (targetY - mesh.position.y) * Math.min(delta * 4, 1);
       mesh.rotation.z += (targetZ - mesh.rotation.z) * Math.min(delta * 3, 1);
       mesh.position.x += (targetX - mesh.position.x) * Math.min(delta * 8, 1);
@@ -192,12 +195,15 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
       mesh.scale.x    += (1 - mesh.scale.x)           * Math.min(delta * 6, 1);
     }
 
-    // Opacity (Sad, Sleep, Back, etc.)
+    // Opacity (Sad, Sleep, etc.)
     mat.opacity += (cfg.opacity - mat.opacity) * Math.min(delta * 3, 1);
   });
 
-  const planeH = 2.8;
-  const planeW = planeH * 0.72;
+  // Sprite is 852×1411 px → aspect 0.6038
+  // Camera at z=3, fov=60 → visible height = 3.46 units
+  // planeH=3.0 fills ~87% of visible height — full sprite fits with margin
+  const planeH = 3.0;
+  const planeW = planeH * (852 / 1411); // ≈ 1.81 — preserves true aspect ratio
 
   return (
     <mesh ref={meshRef}>
@@ -220,8 +226,9 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
 type Props = { isSpeaking: boolean; isOnline: boolean; emotion: AmadeusEmotion };
 
 export function AmadeusAvatar({ isSpeaking, isOnline, emotion }: Props) {
+  // zIndex:10 — lifts avatar above .crt-frame::after scanline overlay
   return (
-    <div className="relative" style={{ width: "320px", height: "420px" }}>
+    <div className="relative" style={{ width: "320px", height: "420px", zIndex: 10 }}>
       {/* Speaking glow ring */}
       <AnimatePresence>
         {isSpeaking && (
@@ -242,7 +249,7 @@ export function AmadeusAvatar({ isSpeaking, isOnline, emotion }: Props) {
        */}
       <Canvas
         gl={{ alpha: true, antialias: true }}
-        camera={{ position: [0, 0, 2], fov: 60 }}
+        camera={{ position: [0, 0, 3], fov: 60 }}
         style={{
           filter: isOnline
             ? "drop-shadow(0 0 18px rgba(123,47,190,0.5))"
