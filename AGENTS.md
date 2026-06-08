@@ -35,8 +35,9 @@
 | 1.3 | Amadeus video-call UI + Supabase clients | Done |
 | 1.3a | Prompt v1.1.0 — authentic Kurisu voice, speech patterns, @channel secret | Done |
 | 1.3b | Video-call layout (75 % video / 25 % chat), Web Speech API TTS, PNG avatar | Done |
-| 1.3c | 3D talking avatar — React Three Fiber + VRM model (mouth/eye animation) | Done |
-| 1.4 | Supabase auth + messages table | **Next** |
+| 1.3c | 3D talking avatar — React Three Fiber + PNG paper-cutout (idle float + speaking sway) | Done |
+| 1.3d | Emotion-driven avatar — LLM outputs `[Emotion]` tag; frontend swaps expression | **Next** |
+| 1.4 | Supabase auth + messages table | After 1.3d |
 | 1.5 | Vercel deploy + LinkedIn post #1 | After 1.4 |
 
 Phase order: 1 Amadeus → 2 D-Mail + RAG → 3 Lab Radio + Lab Notes.
@@ -46,7 +47,9 @@ Complete the current phase before starting the next. Each phase ends with a depl
 
 - Amadeus before D-Mail — more visually striking for LinkedIn post #1
 - No RAG in Phase 1 — Steins;Gate lore baked into system prompt; pgvector RAG in Phase 2
-- Avatar: `components/AmadeusAvatar.tsx` — React Three Fiber Canvas with `VRM1_Constraint_Twist_Sample.vrm` (CC BY 4.0, Pixiv) at `public/kurisu.vrm`. Mouth (`"aa"`) and eye (`"blink"`) expressions driven by `isSpeaking` / idle blink loop. Replace `public/kurisu.vrm` with any VRoid-exported model — code needs no changes.
+- Avatar: `components/AmadeusAvatar.tsx` — R3F Canvas, `kurisu.png` as a 3D plane (paper-cutout technique). Idle float + speaking micro-sway driven by `isSpeaking`. Upgrade path: swap for a proper VRoid `.vrm` — Canvas code stays the same.
+- Emotion system (step 1.3d, inspired by [CodeDroidX/Amadeus on Habr](https://habr.com/en/articles/799017/)): Kurisu prepends `[Emotion]` to every reply. API route strips the tag and sends it as a separate SSE field. Frontend maps emotion → avatar animation variant. **No VN sprites** — use AI-generated expression images or per-emotion Three.js animations only.
+- TTS: Web Speech API (browser-native) for Phase 1. Future upgrade: [`mio/amadeus`](https://huggingface.co/mio/amadeus) ESPnet model (trained on Kurisu's Japanese VA) via a Python sidecar — Phase 2.
 - Streaming prose for Amadeus; structured JSON + Zod for D-Mail
 - Guest-first — full functionality without login; `localStorage` now, Supabase on sign-up
 
@@ -100,6 +103,34 @@ supabase/migrations/
 - Every user-facing prompt must include the canon spellings list verbatim
 - See `.cursor/skills/fgl-new-prompt/SKILL.md` for the prompt file template
 
+### Amadeus Emotion System (step 1.3d)
+
+Kurisu must begin **every** reply with exactly one emotion tag on its own line, e.g. `[Angry]`.
+The API route strips the tag before streaming text to the client and sends it as a separate header/field.
+
+**Canonical emotion list** (20 states — same set used by the original Amadeus system):
+
+```
+Default · Very Default · Calm · Serious · Very Serious · Interest · Very Not Interest
+Not Interest · Fun · Angry · Sad · Disappoint · Tired · Embrassed · Very Embrassed
+Surprise · Wink · Sleep · Closed Sleep · Back
+```
+
+Mapping guidelines for the prompt:
+| Situation | Emotion |
+|---|---|
+| Neutral reply | `Default` |
+| Science / explaining | `Calm` or `Serious` |
+| Excited about topic | `Interest` |
+| Player says something dumb | `Not Interest` or `Disappoint` |
+| Tsundere deflection | `Embrassed` |
+| Laugh / sarcasm | `Fun` |
+| "Christina" / nickname | `Angry` |
+| Genuine warmth | `Wink` |
+| Tired of a repeated question | `Tired` |
+| Surprised / shocked | `Surprise` |
+| Shutting down / goodbye | `Sleep` or `Closed Sleep` |
+
 ## Theme
 
 - No hex codes inline — use tokens from `constants/theme.ts`
@@ -120,7 +151,7 @@ Reading Steiner · El Psy Kongroo · world line (two words, lowercase) · Hououi
 - `any` types
 - `useEffect` for data fetching
 - Supabase calls that bypass RLS
-- Copyrighted Steins;Gate assets (art, music, sprites)
+- Copyrighted Steins;Gate assets (art, music, sprites) — this includes VN sprite rips (`CRS_J*.png`), OST audio, and official character art even for the emotion system; use AI-generated originals instead
 - New dependencies without updating the stack table
 - Phase N+1 feature work while Phase N is unshipped
 
