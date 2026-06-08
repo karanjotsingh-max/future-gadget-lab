@@ -39,7 +39,7 @@ The project root is `future-gadget-lab/` (inside the `Steins Gate` workspace fol
 
 ```
 future-gadget-lab/
-├── AGENTS.md, PLAN.md, README.md   # Project docs (this file is here)
+├── AGENTS.md, ROADMAP.md, README.md # Project docs (this file is here)
 ├── CONTRIBUTING.md, LICENSE
 ├── .env.example, .gitignore
 ├── package.json, tsconfig.json
