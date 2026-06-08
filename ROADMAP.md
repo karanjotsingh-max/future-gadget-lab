@@ -160,19 +160,26 @@ Redesigned `/amadeus` to feel like an actual video call, not a chat window.
 - **Web Speech API TTS** — every completed Amadeus response is spoken aloud using the browser's best female voice (rate 0.92, pitch 1.15). `▶ VOICE ON/OFF` toggle in chat header
 - **Speaking animations** — purple glow pulses around the avatar, animated sound bars + `SPEAKING` label appear below the name plate while TTS plays
 - **PNG avatar** — replaced CSS geometric avatar with `/public/kurisu.png` (user-provided, AI-generated — no official art). Scan line sweeps over the image; vignette darkens edges; purple `drop-shadow` glow; speaking glow ring pulses when TTS is active
-- **Fresh sessions** — each page load starts with an empty chat (no `localStorage` pre-fill); history persistence will be wired to Supabase in Step 1.4
+- **Session persistence (guest mode)** — conversation history saved to `localStorage` (key `amadeus_history_v1`, last 40 messages); restored on every page load via a `useState` lazy initializer. Supabase persistence wired in Step 1.4.
 
 ---
 
-#### 1.3c — 3D Talking Avatar (React Three Fiber + VRM) ⬜ Next
+#### 1.3c — 3D Talking Avatar (React Three Fiber + VRM) ✅ Done (2026-06-08)
 
-Replace the static PNG with a real-time 3D character that moves when Amadeus speaks.
+Replaced the static PNG avatar with a real-time 3D character that animates when Amadeus speaks.
 
-**Plan:**
-- Add `three`, `@react-three/fiber`, `@react-three/drei`, `@pixiv/three-vrm` to the stack (update AGENTS.md table)
-- Source a CC-licensed VRM model from VRoid Hub (anime-style, lab-coat aesthetic, no official character)
-- Build `components/AmadeusViewer.tsx` — loads VRM, idle head-bob + blink loop, mouth morph targets driven by `isSpeaking` state
-- Swap `<KurisuAvatar>` for `<AmadeusViewer>` in `app/amadeus/page.tsx`
+- **Dependencies added** — `three`, `@react-three/fiber`, `@react-three/drei`, `@pixiv/three-vrm` (stack table in AGENTS.md updated)
+- **VRM model** — `VRM1_Constraint_Twist_Sample.vrm` (CC BY 4.0, from Pixiv/three-vrm) saved to `public/kurisu.vrm`. Swap this file with any VRoid export — code needs no changes.
+- **`components/AmadeusAvatar.tsx`** — R3F Canvas with transparent background (`gl={{ alpha: true }}`):
+  - `VRMScene` — loads VRM via `useLoader(GLTFLoader, ..., VRMLoaderPlugin)`. Suspends until loaded; R3F caches by URL.
+  - Mouth: `expressionManager.setValue("aa", ...)` oscillates at ~5 Hz while `isSpeaking === true`
+  - Blink: idle blink every 3.5–6 s via refs (no re-renders), 180 ms cycle
+  - `vrm.update(delta)` called every frame for spring bones + look-at
+  - Camera at `[0, 1.45, 0.7]` + `CameraLookAt` component aims at head height; model offset `y = -1.45` for bust framing
+  - Purple key light + blue-white fill; CRT vignette overlay matches the rest of the UI
+- **`app/amadeus/page.tsx`** — `next/dynamic` with `ssr: false` imports the avatar (Three.js is browser-only); `<KurisuAvatar>` PNG component removed; `loadHistory` moved from orphaned function to `useState` lazy initializer (bug fix)
+
+Quality gates: `tsc` 0 errors · `eslint` 0 errors · committed on `main`
 
 ---
 
