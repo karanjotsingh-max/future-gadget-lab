@@ -3,11 +3,11 @@
 /**
  * /amadeus — Kurisu Makise video-call interface (Amadeus system)
  *
- * Layout:  full-screen video-call style
- *   - Top panel: dominant avatar area (video feed)
- *   - Bottom panel: subtitle-style chat log + input
- * Voice:   Web Speech API (speechSynthesis) — speaks every completed response
- * Avatar:  CSS-only geometric Kurisu with depth, HUD overlays, talking animation
+ * Layout (true video-call):
+ *   - Top ~75 vh : video feed panel — avatar centred, full-width
+ *   - Bottom ~25 vh : compact chat strip — messages + input
+ * Voice:  Web Speech API speaks every completed response
+ * Avatar: CSS-only geometric Kurisu with depth, HUD, talking animation
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -45,10 +45,6 @@ function saveHistory(messages: Message[]): void {
   }
 }
 
-/**
- * Picks the best female voice available in the browser.
- * Prefers Google UK/US female voices; falls back to any female voice; then any voice.
- */
 function pickVoice(): SpeechSynthesisVoice | null {
   if (typeof window === "undefined") return null;
   const voices = window.speechSynthesis.getVoices();
@@ -62,16 +58,14 @@ function pickVoice(): SpeechSynthesisVoice | null {
     const v = voices.find((v) => v.name === name);
     if (v) return v;
   }
-  return voices.find((v) => v.lang.startsWith("en") && /female/i.test(v.name))
-    ?? voices.find((v) => v.lang.startsWith("en"))
-    ?? voices[0]
-    ?? null;
+  return (
+    voices.find((v) => v.lang.startsWith("en") && /female/i.test(v.name)) ??
+    voices.find((v) => v.lang.startsWith("en")) ??
+    voices[0] ??
+    null
+  );
 }
 
-/**
- * Speak text via Web Speech API.
- * Cancels any ongoing speech first so responses never queue up.
- */
 function speak(text: string, onEnd: () => void): void {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -85,22 +79,19 @@ function speak(text: string, onEnd: () => void): void {
   window.speechSynthesis.speak(utt);
 }
 
-// ─── HUD decorations ──────────────────────────────────────────
-function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
-  const cls = {
-    tl: "top-3 left-3 border-t border-l",
-    tr: "top-3 right-3 border-t border-r",
-    bl: "bottom-3 left-3 border-b border-l",
-    br: "bottom-3 right-3 border-b border-r",
-  }[position];
-  return (
-    <div
-      className={`absolute h-5 w-5 border-(--color-amadeus-purple)/50 ${cls}`}
-    />
-  );
+// ─── HUD corner brackets ──────────────────────────────────────
+function HudCorner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
+  const base = "absolute h-6 w-6 border-(--color-amadeus-purple)/40";
+  const sides = {
+    tl: "top-4 left-4 border-t border-l",
+    tr: "top-4 right-4 border-t border-r",
+    bl: "bottom-4 left-4 border-b border-l",
+    br: "bottom-4 right-4 border-b border-r",
+  }[pos];
+  return <div className={`${base} ${sides}`} />;
 }
 
-// ─── Enhanced Kurisu Avatar ────────────────────────────────────
+// ─── Kurisu avatar ────────────────────────────────────────────
 function KurisuAvatar({
   status,
   isSpeaking,
@@ -111,107 +102,91 @@ function KurisuAvatar({
   const online = status === "online";
 
   return (
-    <div className="relative flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72">
-      {/* Outer slow-pulse ring */}
+    <div className="relative flex h-72 w-72 items-center justify-center sm:h-80 sm:w-80">
+      {/* Slow outer pulse */}
       <motion.div
-        className="absolute inset-0 rounded-full border border-(--color-amadeus-purple)/25"
-        animate={online ? { scale: [1, 1.06, 1], opacity: [0.3, 0.6, 0.3] } : { opacity: 0.1 }}
+        className="absolute inset-0 rounded-full border border-(--color-amadeus-purple)/20"
+        animate={online ? { scale: [1, 1.07, 1], opacity: [0.25, 0.55, 0.25] } : { opacity: 0.08 }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
-
-      {/* Mid rotating ring */}
+      {/* Slow CW ring */}
       <motion.div
-        className="absolute inset-5 rounded-full border border-(--color-amadeus-purple)/20"
+        className="absolute inset-6 rounded-full border border-(--color-amadeus-purple)/15"
         animate={online ? { rotate: 360 } : { opacity: 0.05 }}
-        transition={online ? { duration: 25, repeat: Infinity, ease: "linear" } : {}}
+        transition={online ? { duration: 28, repeat: Infinity, ease: "linear" } : {}}
       />
-
-      {/* Inner counter-rotating ring */}
+      {/* Fast CCW ring */}
       <motion.div
-        className="absolute inset-10 rounded-full border border-(--color-amadeus-purple)/15"
+        className="absolute inset-12 rounded-full border border-(--color-amadeus-purple)/10"
         animate={online ? { rotate: -360 } : { opacity: 0.05 }}
-        transition={online ? { duration: 15, repeat: Infinity, ease: "linear" } : {}}
+        transition={online ? { duration: 14, repeat: Infinity, ease: "linear" } : {}}
       />
 
-      {/* Speaking pulse — extra ring that activates when talking */}
+      {/* Speaking ring */}
       <AnimatePresence>
         {isSpeaking && (
           <motion.div
-            key="speak-ring"
-            className="absolute inset-2 rounded-full border-2 border-(--color-amadeus-purple)/60"
+            key="spk"
+            className="absolute inset-3 rounded-full border-2 border-(--color-amadeus-purple)/55"
             initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: [1, 1.08, 1], opacity: [0.6, 0.2, 0.6] }}
+            animate={{ scale: [1, 1.09, 1], opacity: [0.55, 0.15, 0.55] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, repeat: Infinity }}
+            transition={{ duration: 0.75, repeat: Infinity }}
           />
         )}
       </AnimatePresence>
 
-      {/* Avatar silhouette */}
+      {/* Silhouette */}
       <motion.div
         className="relative z-10 flex flex-col items-center"
-        animate={online ? { opacity: 1, y: 0 } : { opacity: 0.25, y: 4 }}
+        animate={online ? { opacity: 1, y: 0 } : { opacity: 0.2, y: 6 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Hair top */}
+        {/* Hair */}
         <div
-          className="h-6 w-20 rounded-t-[80%]"
+          className="h-7 w-24 rounded-t-[80%]"
           style={{
-            background: "linear-gradient(180deg, rgba(123,47,190,0.5) 0%, rgba(123,47,190,0.15) 100%)",
-            border: "1px solid rgba(123,47,190,0.6)",
+            background: "linear-gradient(180deg,rgba(123,47,190,.55) 0%,rgba(123,47,190,.15) 100%)",
+            border: "1px solid rgba(123,47,190,.65)",
             borderBottom: "none",
           }}
         />
         {/* Head */}
         <div
-          className="relative h-24 w-16"
+          className="relative h-28 w-20"
           style={{
             background:
-              "radial-gradient(ellipse at 40% 35%, rgba(123,47,190,0.4) 0%, rgba(123,47,190,0.1) 65%, transparent 100%)",
-            border: "1px solid rgba(123,47,190,0.65)",
+              "radial-gradient(ellipse at 42% 35%,rgba(123,47,190,.42) 0%,rgba(123,47,190,.1) 65%,transparent 100%)",
+            border: "1px solid rgba(123,47,190,.7)",
             borderTop: "none",
-            borderRadius: "0 0 45% 45%",
-            boxShadow:
-              "0 0 24px rgba(123,47,190,0.35), inset 0 0 16px rgba(123,47,190,0.12)",
+            borderRadius: "0 0 48% 48%",
+            boxShadow: "0 0 28px rgba(123,47,190,.38),inset 0 0 18px rgba(123,47,190,.12)",
           }}
         >
           {/* Eyes */}
-          <div className="absolute top-7 left-3 h-1.5 w-2.5 rounded-full bg-(--color-amadeus-purple)/80" />
-          <div className="absolute top-7 right-3 h-1.5 w-2.5 rounded-full bg-(--color-amadeus-purple)/80" />
-
-          {/* Mouth — animates when speaking */}
+          <div className="absolute top-8 left-3 h-2 w-3 rounded-full bg-(--color-amadeus-purple)/85" />
+          <div className="absolute top-8 right-3 h-2 w-3 rounded-full bg-(--color-amadeus-purple)/85" />
+          {/* Nose hint */}
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-(--color-amadeus-purple)/40" />
+          {/* Mouth */}
           <motion.div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-(--color-amadeus-purple)/60"
+            className="absolute bottom-7 left-1/2 -translate-x-1/2 rounded-full bg-(--color-amadeus-purple)/65"
             animate={
               isSpeaking
-                ? { width: ["6px", "10px", "4px", "8px", "6px"], height: ["2px", "4px", "2px", "3px", "2px"] }
-                : { width: "6px", height: "2px" }
+                ? { width: ["6px","11px","4px","9px","6px"], height: ["2px","5px","2px","4px","2px"] }
+                : { width: "7px", height: "2px" }
             }
-            transition={isSpeaking ? { duration: 0.4, repeat: Infinity } : { duration: 0.2 }}
+            transition={isSpeaking ? { duration: 0.38, repeat: Infinity } : { duration: 0.2 }}
           />
         </div>
-
         {/* Shoulders */}
         <div
-          className="h-10 w-32 rounded-b-[60%]"
+          className="h-12 w-40 rounded-b-[60%]"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(123,47,190,0.28) 0%, rgba(123,47,190,0.04) 100%)",
-            border: "1px solid rgba(123,47,190,0.4)",
+            background: "linear-gradient(180deg,rgba(123,47,190,.28) 0%,rgba(123,47,190,.04) 100%)",
+            border: "1px solid rgba(123,47,190,.42)",
             borderTop: "none",
-            boxShadow: "0 6px 18px rgba(123,47,190,0.18)",
-          }}
-        />
-
-        {/* Tie detail */}
-        <div
-          className="absolute bottom-0 h-5 w-3 rounded-b-sm"
-          style={{
-            background: "linear-gradient(180deg, rgba(123,47,190,0.6) 0%, rgba(123,47,190,0.2) 100%)",
-            border: "1px solid rgba(123,47,190,0.5)",
-            top: "calc(100% - 2.5rem)",
-            left: "50%",
-            transform: "translateX(-50%)",
+            boxShadow: "0 8px 22px rgba(123,47,190,.18)",
           }}
         />
       </motion.div>
@@ -219,9 +194,9 @@ function KurisuAvatar({
       {/* Scan line */}
       {online && (
         <motion.div
-          className="pointer-events-none absolute inset-x-6 h-px bg-(--color-amadeus-purple)/30"
-          animate={{ top: ["15%", "85%", "15%"] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute inset-x-8 h-px bg-(--color-amadeus-purple)/25"
+          animate={{ top: ["12%","88%","12%"] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
           style={{ position: "absolute" }}
         />
       )}
@@ -229,28 +204,25 @@ function KurisuAvatar({
   );
 }
 
-// ─── Single chat message (subtitle style) ─────────────────────
+// ─── Single message row ───────────────────────────────────────
 function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming: boolean }) {
   const isKurisu = msg.role === "assistant";
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: 0.15 }}
       className={`flex flex-col gap-0.5 ${isKurisu ? "items-start" : "items-end"}`}
     >
-      <span
-        className="text-[9px] tracking-[0.25em] text-(--color-text-muted)"
-        style={{ fontFamily: "var(--font-ui)" }}
-      >
+      <span className="text-[9px] tracking-[0.25em] text-(--color-text-muted)" style={{ fontFamily: "var(--font-ui)" }}>
         {isKurisu ? "AMADEUS" : "YOU"}
       </span>
       <p
-        className={`max-w-[85%] rounded px-3 py-1.5 text-sm leading-relaxed ${
+        className={`max-w-[88%] rounded px-3 py-1.5 text-sm leading-relaxed ${
           isKurisu
-            ? "phosphor-purple border border-(--color-amadeus-purple)/30 bg-(--color-bg)/80"
-            : "border border-(--color-terminal-green)/25 bg-(--color-bg)/80 text-(--color-terminal-green)"
-        } ${isKurisu && isStreaming ? "terminal-cursor" : ""}`}
+            ? `phosphor-purple border border-(--color-amadeus-purple)/30 bg-(--color-bg)/90 ${isStreaming ? "terminal-cursor" : ""}`
+            : "border border-(--color-terminal-green)/25 bg-(--color-bg)/90 text-(--color-terminal-green)"
+        }`}
         style={{ fontFamily: "var(--font-ui)" }}
       >
         {msg.content || "\u00A0"}
@@ -259,7 +231,7 @@ function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming: boolea
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────
 export default function AmadeusPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [messages, setMessages] = useState<Message[]>(loadHistory);
@@ -271,27 +243,17 @@ export default function AmadeusPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Connection sequence
   useEffect(() => {
     const t = setTimeout(() => setStatus("online"), 2200);
     return () => clearTimeout(t);
   }, []);
 
-  // Auto-scroll chat log
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Cancel speech on unmount
-  useEffect(() => {
-    return () => {
-      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-    };
-  }, []);
+  useEffect(() => () => { window.speechSynthesis?.cancel(); }, []);
 
-  // Voices load async in some browsers — warm up the list on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.speechSynthesis.getVoices();
@@ -310,9 +272,7 @@ export default function AmadeusPage() {
     setInput("");
     setIsLoading(true);
     setStreamingId(assistantId);
-
-    // Cancel any ongoing speech when user sends a new message
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    window.speechSynthesis?.cancel();
     setIsSpeaking(false);
 
     const history = [
@@ -329,10 +289,7 @@ export default function AmadeusPage() {
         body: JSON.stringify({ messages: history }),
       });
 
-      if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => "Unknown error");
-        throw new Error(errText);
-      }
+      if (!res.ok || !res.body) throw new Error(await res.text().catch(() => "Unknown error"));
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -347,7 +304,6 @@ export default function AmadeusPage() {
         );
       }
 
-      // Speak the completed response
       if (voiceEnabled && accumulated.trim()) {
         setIsSpeaking(true);
         speak(accumulated, () => setIsSpeaking(false));
@@ -375,277 +331,183 @@ export default function AmadeusPage() {
   }, [input, isLoading, messages, voiceEnabled]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); }
   };
 
   const clearHistory = () => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    window.speechSynthesis?.cancel();
     setIsSpeaking(false);
   };
 
   const toggleVoice = () => {
-    if (voiceEnabled) {
-      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-      setIsSpeaking(false);
-    }
+    if (voiceEnabled) { window.speechSynthesis?.cancel(); setIsSpeaking(false); }
     setVoiceEnabled((v) => !v);
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
-      {/* ── Top breadcrumb ── */}
-      <div className="px-4 pt-4 pb-2">
-        <p
-          className="text-[10px] tracking-[0.35em] text-(--color-text-muted)"
-          style={{ fontFamily: "var(--font-ui)" }}
-        >
-          GADGET / #002 / AMADEUS SYSTEM
-        </p>
-      </div>
+    // Fill the viewport below the nav bar
+    <div className="flex flex-col" style={{ height: "calc(100vh - 4rem)" }}>
 
-      {/* ── Main call panel ── */}
-      <div className="flex flex-1 flex-col md:flex-row gap-0 px-4 pb-4">
+      {/* ═══════════════════════════════════════════════════════
+          VIDEO FEED — 75 % of height
+      ═══════════════════════════════════════════════════════ */}
+      <div
+        className="crt-frame crt-flicker relative flex flex-col items-center justify-center overflow-hidden"
+        style={{ flex: "0 0 75%" }}
+      >
+        <HudCorner pos="tl" />
+        <HudCorner pos="tr" />
+        <HudCorner pos="bl" />
+        <HudCorner pos="br" />
 
-        {/* ── VIDEO FEED (left / top) ── */}
-        <div className="crt-frame crt-flicker relative flex flex-col items-center justify-center md:w-[55%] min-h-[420px] overflow-hidden">
-          {/* HUD corners */}
-          <HudCorner position="tl" />
-          <HudCorner position="tr" />
-          <HudCorner position="bl" />
-          <HudCorner position="br" />
+        {/* Top status bar */}
+        <div className="absolute top-0 inset-x-0 flex items-center justify-between border-b border-(--color-amadeus-purple)/20 px-5 py-2 bg-(--color-bg)/60 backdrop-blur-sm">
+          <span className="text-[9px] tracking-[0.35em] text-(--color-text-muted)" style={{ fontFamily: "var(--font-ui)" }}>
+            AMADEUS_SYS v2.0.1049
+          </span>
 
-          {/* Status bar */}
-          <div className="absolute top-0 inset-x-0 flex items-center justify-between border-b border-(--color-amadeus-purple)/20 px-4 py-1.5">
-            <span
-              className="text-[9px] tracking-[0.3em] text-(--color-text-muted)"
-              style={{ fontFamily: "var(--font-ui)" }}
-            >
-              AMADEUS_SYS v2.0.1049
-            </span>
-            <AnimatePresence mode="wait">
-              {status === "connecting" ? (
-                <motion.span
-                  key="conn"
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                  className="text-[9px] tracking-[0.3em] text-(--color-steiner-amber)"
-                  style={{ fontFamily: "var(--font-ui)" }}
-                >
-                  ● CONNECTING...
-                </motion.span>
-              ) : status === "online" ? (
-                <motion.span
-                  key="online"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="phosphor-purple text-[9px] tracking-[0.3em]"
-                  style={{ fontFamily: "var(--font-ui)" }}
-                >
-                  ● LIVE
-                </motion.span>
-              ) : (
-                <span className="text-[9px] tracking-[0.3em] text-(--color-alert-red)" style={{ fontFamily: "var(--font-ui)" }}>
-                  ● ERROR
-                </span>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Avatar */}
-          <KurisuAvatar status={status} isSpeaking={isSpeaking} />
-
-          {/* Name plate */}
           <AnimatePresence mode="wait">
             {status === "connecting" ? (
-              <motion.p
-                key="est"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [1, 0.4, 1] }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="mt-4 text-[11px] tracking-[0.5em] text-(--color-steiner-amber)"
-                style={{ fontFamily: "var(--font-ui)" }}
-              >
-                ESTABLISHING LINK...
-              </motion.p>
+              <motion.span key="conn" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
+                className="text-[9px] tracking-[0.3em] text-(--color-steiner-amber)" style={{ fontFamily: "var(--font-ui)" }}>
+                ● CONNECTING...
+              </motion.span>
+            ) : status === "online" ? (
+              <motion.span key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="phosphor-purple text-[9px] tracking-[0.3em]" style={{ fontFamily: "var(--font-ui)" }}>
+                ● LIVE
+              </motion.span>
             ) : (
-              <motion.div
-                key="name"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="mt-4 flex flex-col items-center gap-1"
-              >
-                <p
-                  className="phosphor-purple text-sm tracking-[0.35em]"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  KURISU MAKISE
-                </p>
-                <p
-                  className="text-[9px] tracking-[0.25em] text-(--color-text-muted)"
-                  style={{ fontFamily: "var(--font-ui)" }}
-                >
-                  AMADEUS DIGITAL RECREATION
-                </p>
-
-                {/* Speaking indicator */}
-                <AnimatePresence>
-                  {isSpeaking && (
-                    <motion.div
-                      key="spk"
-                      initial={{ opacity: 0, y: 2 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="flex items-center gap-1.5 mt-1"
-                    >
-                      {[0, 1, 2, 3].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-0.5 bg-(--color-amadeus-purple)/70 rounded-full"
-                          animate={{ height: ["4px", "12px", "4px"] }}
-                          transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.12 }}
-                        />
-                      ))}
-                      <span
-                        className="text-[9px] tracking-[0.2em] text-(--color-amadeus-purple)/70 ml-1"
-                        style={{ fontFamily: "var(--font-ui)" }}
-                      >
-                        SPEAKING
-                      </span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+              <span className="text-[9px] tracking-[0.3em] text-(--color-alert-red)" style={{ fontFamily: "var(--font-ui)" }}>● ERROR</span>
             )}
           </AnimatePresence>
 
-          {/* Bottom HUD row */}
-          <div className="absolute bottom-0 inset-x-0 flex items-center justify-between border-t border-(--color-amadeus-purple)/15 px-4 py-1.5">
-            <span
-              className="text-[8px] tracking-[0.2em] text-(--color-text-dim)"
-              style={{ fontFamily: "var(--font-ui)" }}
-            >
-              VIKTOR CHONDRIA UNIV.
-            </span>
-            <span
-              className="text-[8px] tracking-[0.2em] text-(--color-text-dim)"
-              style={{ fontFamily: "var(--font-ui)" }}
-            >
-              LAT 35.6° / LON 139.7°
-            </span>
-          </div>
+          {/* Voice toggle */}
+          <button onClick={toggleVoice}
+            className={`text-[9px] tracking-[0.25em] transition ${voiceEnabled ? "phosphor-purple" : "text-(--color-text-dim)"}`}
+            style={{ fontFamily: "var(--font-ui)" }}>
+            {voiceEnabled ? "▶ VOICE ON" : "▶ VOICE OFF"}
+          </button>
         </div>
 
-        {/* ── CHAT PANEL (right / bottom) ── */}
-        <div className="crt-frame flex flex-1 flex-col border-l-0 md:border-l border-(--color-amadeus-purple)/20">
-          {/* Chat header */}
-          <div className="flex items-center justify-between border-b border-(--color-amadeus-purple)/20 px-3 py-2">
-            <span
-              className="text-[9px] tracking-[0.3em] text-(--color-text-muted)"
-              style={{ fontFamily: "var(--font-ui)" }}
-            >
-              TRANSMISSION LOG
-            </span>
-            <div className="flex items-center gap-3">
-              {/* Voice toggle */}
-              <button
-                onClick={toggleVoice}
-                className={`text-[9px] tracking-[0.2em] transition ${
-                  voiceEnabled
-                    ? "phosphor-purple"
-                    : "text-(--color-text-dim)"
-                }`}
-                style={{ fontFamily: "var(--font-ui)" }}
-                title={voiceEnabled ? "Voice ON — click to mute" : "Voice OFF — click to enable"}
-              >
-                {voiceEnabled ? "▶ VOICE ON" : "▶ VOICE OFF"}
-              </button>
-              {messages.length > 0 && (
-                <button
-                  onClick={clearHistory}
-                  className="text-[9px] tracking-[0.2em] text-(--color-text-dim) hover:text-(--color-alert-red) transition"
-                  style={{ fontFamily: "var(--font-ui)" }}
-                >
-                  CLEAR
-                </button>
-              )}
-            </div>
-          </div>
+        {/* Avatar */}
+        <KurisuAvatar status={status} isSpeaking={isSpeaking} />
 
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3 min-h-[200px]"
-            style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(123,47,190,0.25) transparent" }}
-          >
-            {messages.length === 0 && status === "online" && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="text-center text-xs text-(--color-text-dim) mt-8"
-                style={{ fontFamily: "var(--font-ui)" }}
-              >
-                {">"} Transmission channel open.
-              </motion.p>
-            )}
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                msg={msg}
-                isStreaming={msg.id === streamingId && isLoading}
-              />
-            ))}
-          </div>
+        {/* Name plate */}
+        <AnimatePresence mode="wait">
+          {status === "connecting" ? (
+            <motion.p key="est" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1, repeat: Infinity }}
+              className="mt-5 text-[11px] tracking-[0.55em] text-(--color-steiner-amber)" style={{ fontFamily: "var(--font-ui)" }}>
+              ESTABLISHING LINK...
+            </motion.p>
+          ) : (
+            <motion.div key="id" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+              className="mt-5 flex flex-col items-center gap-1">
+              <p className="phosphor-purple text-base tracking-[0.4em]" style={{ fontFamily: "var(--font-display)" }}>
+                KURISU MAKISE
+              </p>
+              <p className="text-[9px] tracking-[0.3em] text-(--color-text-muted)" style={{ fontFamily: "var(--font-ui)" }}>
+                AMADEUS DIGITAL RECREATION · ACTIVE
+              </p>
 
-          {/* Input */}
-          <div className="border-t border-(--color-amadeus-purple)/20 px-3 py-2">
-            <div className="flex gap-2 items-end">
-              <span
-                className="phosphor-purple mb-2 flex-shrink-0 text-sm"
-                style={{ fontFamily: "var(--font-ui)" }}
-              >
-                {">"}
-              </span>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={status !== "online" || isLoading}
-                placeholder={
-                  status === "connecting"
-                    ? "Waiting for connection..."
-                    : isLoading
-                    ? "Amadeus is responding..."
-                    : "Say something..."
-                }
-                rows={2}
-                className="flex-1 resize-none bg-transparent text-sm leading-relaxed text-(--color-text-cold) placeholder:text-(--color-text-dim) focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ fontFamily: "var(--font-ui)" }}
-              />
-              <button
-                onClick={() => void sendMessage()}
-                disabled={status !== "online" || isLoading || !input.trim()}
-                className="flex-shrink-0 border border-(--color-amadeus-purple)/40 px-3 py-1 text-[10px] tracking-[0.2em] text-(--color-amadeus-purple) transition hover:border-(--color-amadeus-purple) hover:bg-(--color-amadeus-purple)/10 disabled:cursor-not-allowed disabled:opacity-30"
-                style={{ fontFamily: "var(--font-ui)" }}
-              >
-                SEND
-              </button>
-            </div>
-            <p
-              className="mt-1 text-[9px] tracking-[0.15em] text-(--color-text-dim)"
+              {/* Speaking bars */}
+              <AnimatePresence>
+                {isSpeaking && (
+                  <motion.div key="bars" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="mt-1 flex items-center gap-1.5">
+                    {[0, 1, 2, 3, 2, 1].map((delay, i) => (
+                      <motion.div key={i} className="w-0.5 rounded-full bg-(--color-amadeus-purple)/70"
+                        animate={{ height: ["3px", "14px", "3px"] }}
+                        transition={{ duration: 0.45, repeat: Infinity, delay: delay * 0.1 }} />
+                    ))}
+                    <span className="ml-1 text-[8px] tracking-[0.2em] text-(--color-amadeus-purple)/60" style={{ fontFamily: "var(--font-ui)" }}>
+                      SPEAKING
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom HUD strip */}
+        <div className="absolute bottom-0 inset-x-0 flex items-center justify-between border-t border-(--color-amadeus-purple)/15 px-5 py-1.5 bg-(--color-bg)/50">
+          <span className="text-[8px] tracking-[0.2em] text-(--color-text-dim)" style={{ fontFamily: "var(--font-ui)" }}>
+            VIKTOR CHONDRIA UNIV.
+          </span>
+          <span className="text-[8px] tracking-[0.2em] text-(--color-text-dim)" style={{ fontFamily: "var(--font-ui)" }}>
+            LAT 35.6° / LON 139.7°
+          </span>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          CHAT STRIP — 25 % of height
+      ═══════════════════════════════════════════════════════ */}
+      <div
+        className="crt-frame flex flex-col border-t-0 overflow-hidden"
+        style={{ flex: "0 0 25%" }}
+      >
+        {/* Chat header */}
+        <div className="flex items-center justify-between border-b border-(--color-amadeus-purple)/20 px-4 py-1.5 shrink-0">
+          <span className="text-[9px] tracking-[0.3em] text-(--color-text-muted)" style={{ fontFamily: "var(--font-ui)" }}>
+            TRANSMISSION LOG
+          </span>
+          {messages.length > 0 && (
+            <button onClick={clearHistory}
+              className="text-[9px] tracking-[0.2em] text-(--color-text-dim) hover:text-(--color-alert-red) transition"
+              style={{ fontFamily: "var(--font-ui)" }}>
+              CLEAR SESSION
+            </button>
+          )}
+        </div>
+
+        {/* Messages — scrollable */}
+        <div ref={scrollRef} className="flex flex-col gap-2 overflow-y-auto px-4 py-2 flex-1"
+          style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(123,47,190,0.2) transparent" }}>
+          {messages.length === 0 && status === "online" && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+              className="text-center text-xs text-(--color-text-dim) my-auto" style={{ fontFamily: "var(--font-ui)" }}>
+              {">"} Transmission channel open.
+            </motion.p>
+          )}
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} isStreaming={msg.id === streamingId && isLoading} />
+          ))}
+        </div>
+
+        {/* Input row */}
+        <div className="border-t border-(--color-amadeus-purple)/20 px-4 py-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="phosphor-purple flex-shrink-0 text-sm" style={{ fontFamily: "var(--font-ui)" }}>{">"}</span>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={status !== "online" || isLoading}
+              placeholder={
+                status === "connecting" ? "Waiting for connection..."
+                  : isLoading ? "Amadeus is responding..."
+                  : "Say something..."
+              }
+              rows={1}
+              className="flex-1 resize-none bg-transparent text-sm leading-relaxed text-(--color-text-cold) placeholder:text-(--color-text-dim) focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
               style={{ fontFamily: "var(--font-ui)" }}
-            >
-              Enter to send · Shift+Enter for newline · GUEST MODE
-            </p>
+            />
+            <button
+              onClick={() => void sendMessage()}
+              disabled={status !== "online" || isLoading || !input.trim()}
+              className="flex-shrink-0 border border-(--color-amadeus-purple)/40 px-3 py-1 text-[10px] tracking-[0.2em] text-(--color-amadeus-purple) transition hover:border-(--color-amadeus-purple) hover:bg-(--color-amadeus-purple)/10 disabled:cursor-not-allowed disabled:opacity-30"
+              style={{ fontFamily: "var(--font-ui)" }}>
+              SEND
+            </button>
           </div>
+          <p className="mt-0.5 text-[8px] tracking-[0.15em] text-(--color-text-dim)" style={{ fontFamily: "var(--font-ui)" }}>
+            Enter · Shift+Enter newline · GUEST MODE
+          </p>
         </div>
       </div>
     </div>
