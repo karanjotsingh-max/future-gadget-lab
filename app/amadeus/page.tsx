@@ -234,7 +234,7 @@ function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming: boolea
 // ─── Page ─────────────────────────────────────────────────────
 export default function AmadeusPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  const [messages, setMessages] = useState<Message[]>(loadHistory);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
