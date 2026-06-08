@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       ],
       stream: true,
       temperature: 0.85,
-      max_tokens: 600,
+      max_tokens: 220,
     });
 
     // ── Phase 1: buffer first chunks until [Emotion] tag is found ────────────
