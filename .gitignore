@@ -54,6 +54,11 @@ supabase/.temp
 *.local
 .cache/
 
+# ─── Sprite assets — downloaded locally, never committed ────────────
+# Place CRS_J*.png files (renamed) here: public/sprites/
+# Run: node scripts/rename-sprites.mjs <path-to-downloaded-drive-folder>
+public/sprites/*.png
+
 # ─── Personal tracking files (not for public repo) ─
 build-tracking-doc.ps1
 Steins-Gate-Project-Tracking.docx

@@ -1,107 +1,189 @@
 "use client";
 
 /**
- * AmadeusAvatar — React Three Fiber canvas with kurisu.png as a 3D plane.
+ * AmadeusAvatar — emotion-driven sprite avatar, same architecture as
+ * the Habr/CodeDroidX Amadeus implementation.
  *
- * Technique: "paper cutout" — the PNG is loaded as a Three.js texture and
- * mapped onto a flat plane. useFrame drives idle float + speaking animations
- * (scale pulse, head sway) to make the still image feel alive.
+ * Texture strategy (article equivalent of sprite-picker):
+ *   1. Look for /sprites/kurisu-{slug}.png       ← expression image
+ *      and /sprites/kurisu-{slug}-open.png       ← talking variant
+ *   2. If a file is missing → silently fall back to /kurisu.png
+ *   3. While speaking + open variant exists: toggle base ↔ open at 5 Hz
+ *      (same effect as the GIF mouth-cycle in the article)
+ *   4. While speaking + no open variant: body micro-sway only
  *
- * Emotion system (step 1.3d): each of the 20 canonical emotions maps to an
- * EmotionConfig that controls float speed/amplitude, sway, X-shake, Y offset,
- * Z-rotation offset, and opacity. Transitions are lerped in useFrame.
+ * Sprite naming (drop files in /public/sprites/):
+ *   kurisu-default.png / kurisu-default-open.png
+ *   kurisu-angry.png   / kurisu-angry-open.png
+ *   kurisu-calm.png    / kurisu-calm-open.png
+ *   … (see EMOTION_SLUG map below for every slug)
  *
- * Upgrade path: when a proper Kurisu .vrm is available, replace PNGScene
- * with the VRMScene implementation (see git history) and swap the camera.
+ * Body animation:
+ *   Each emotion maps to an EmotionConfig that controls float speed,
+ *   sway amplitude, X-shake (Angry), Y offset, Z-rotation offset, and
+ *   opacity. All values lerp smoothly in useFrame.
  *
- * Dynamically imported with ssr:false in amadeus/page.tsx because
- * Three.js / WebGL only exist in the browser.
+ * Upgrade path:
+ *   Replace PNGScene with VRMScene (see git history) to switch from
+ *   sprites to a full 3D VRM avatar — Canvas/props stay identical.
  */
 
-import { Suspense, useRef } from "react";
+import { Suspense, useRef, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import type { AmadeusEmotion } from "@/lib/prompts/amadeus";
 
+// ── Emotion → sprite slug ──────────────────────────────────────────
+// Files live in /public/sprites/kurisu-{slug}.png
+// and /public/sprites/kurisu-{slug}-open.png (talking variant).
+const EMOTION_SLUG: Record<string, string> = {
+  "Default":           "default",
+  "Very Default":      "very-default",
+  "Calm":              "calm",
+  "Serious":           "serious",
+  "Very Serious":      "very-serious",
+  "Interest":          "interest",
+  "Not Interest":      "not-interest",
+  "Very Not Interest": "very-not-interest",
+  "Fun":               "fun",
+  "Angry":             "angry",
+  "Sad":               "sad",
+  "Disappoint":        "disappoint",
+  "Tired":             "tired",
+  "Embrassed":         "embrassed",
+  "Very Embrassed":    "very-embrassed",
+  "Surprise":          "surprise",
+  "Wink":              "wink",
+  "Sleep":             "sleep",
+  "Closed Sleep":      "closed-sleep",
+  "Back":              "back",
+};
+
 // ── Emotion animation config ───────────────────────────────────────
+// Calibrated for 320×420 canvas at z=2, fov=60 (1 unit ≈ 182 px).
 type EmotionConfig = {
   floatAmp: number;    // Y float amplitude
   floatFreq: number;   // Y float frequency (Hz)
   swayAmp: number;     // Z rotation sway amplitude (radians)
-  swayFreq: number;    // Z rotation sway frequency (Hz)
-  xShakeAmp: number;   // X position shake amplitude (Angry)
-  xShakeFreq: number;  // X position shake frequency
+  swayFreq: number;    // Z rotation sway frequency
+  xShakeAmp: number;   // X shake amplitude — Angry only
+  xShakeFreq: number;
   yOffset: number;     // constant Y position offset
   zRotOffset: number;  // constant Z rotation offset
   opacity: number;     // material opacity [0–1]
 };
 
-// All amplitudes are calibrated for a 320×420 canvas at z=2, fov=60.
-// At that view distance 1 Three.js unit ≈ 182 px, so floatAmp:0.07 ≈ ±13 px
-// of vertical travel — clearly visible without being distracting.
 const D: EmotionConfig = {
   floatAmp: 0.070, floatFreq: 0.55,
-  swayAmp: 0.018, swayFreq: 0.38,
+  swayAmp: 0.018,  swayFreq: 0.38,
   xShakeAmp: 0, xShakeFreq: 0,
   yOffset: 0, zRotOffset: 0, opacity: 1,
 };
 
 const EMOTION_CONFIGS: Record<string, EmotionConfig> = {
-  "Default":          { ...D },
-  "Very Default":     { ...D },
-  "Calm":             { ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25 },
-  "Serious":          { ...D, floatAmp: 0.028, floatFreq: 0.30, swayAmp: 0.006, swayFreq: 0.20 },
-  "Very Serious":     { ...D, floatAmp: 0.022, floatFreq: 0.25, swayAmp: 0.004, swayFreq: 0.15 },
-  "Interest":         { ...D, floatAmp: 0.085, floatFreq: 0.70, swayAmp: 0.022, swayFreq: 0.55, yOffset: 0.10, zRotOffset: -0.06 },
-  "Not Interest":     { ...D, floatAmp: 0.042, floatFreq: 0.40, swayAmp: 0.012, swayFreq: 0.30, yOffset: -0.08, zRotOffset: 0.045 },
-  "Very Not Interest":{ ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25, yOffset: -0.10, zRotOffset: 0.060 },
-  "Fun":              { ...D, floatAmp: 0.120, floatFreq: 1.00, swayAmp: 0.032, swayFreq: 0.85, yOffset: 0.12 },
-  "Angry":            { ...D, floatAmp: 0.025, floatFreq: 0.50, swayAmp: 0.012, xShakeAmp: 0.080, xShakeFreq: 9.0 },
-  "Sad":              { ...D, floatAmp: 0.025, floatFreq: 0.25, swayAmp: 0.008, swayFreq: 0.20, yOffset: -0.15, zRotOffset: 0.06, opacity: 0.85 },
-  "Disappoint":       { ...D, floatAmp: 0.032, floatFreq: 0.30, swayAmp: 0.008, swayFreq: 0.22, yOffset: -0.10, zRotOffset: 0.050, opacity: 0.90 },
-  "Tired":            { ...D, floatAmp: 0.018, floatFreq: 0.18, swayAmp: 0.006, swayFreq: 0.14, yOffset: -0.08, zRotOffset: 0.040, opacity: 0.80 },
-  "Embrassed":        { ...D, floatAmp: 0.055, floatFreq: 0.60, swayAmp: 0.065, swayFreq: 3.50 },
-  "Very Embrassed":   { ...D, floatAmp: 0.060, floatFreq: 0.65, swayAmp: 0.090, swayFreq: 4.50 },
-  "Surprise":         { ...D, floatAmp: 0.050, floatFreq: 0.55, swayAmp: 0.016, swayFreq: 0.45, yOffset: 0.14, zRotOffset: -0.04 },
-  "Wink":             { ...D, floatAmp: 0.068, floatFreq: 0.55, swayAmp: 0.028, swayFreq: 0.50, yOffset: 0.05, zRotOffset: -0.05 },
-  "Sleep":            { ...D, floatAmp: 0.014, floatFreq: 0.18, swayAmp: 0.003, swayFreq: 0.12, yOffset: -0.12, zRotOffset: 0.04, opacity: 0.65 },
-  "Closed Sleep":     { ...D, floatAmp: 0.008, floatFreq: 0.14, swayAmp: 0.003, swayFreq: 0.10, yOffset: -0.16, zRotOffset: 0.05, opacity: 0.50 },
-  // "Back" — she turns away: extreme tilt + low opacity
-  "Back":             { ...D, floatAmp: 0.055, floatFreq: 0.55, swayAmp: 0.011, swayFreq: 0.35, zRotOffset: 1.5, opacity: 0.35 },
+  "Default":           { ...D },
+  "Very Default":      { ...D },
+  "Calm":              { ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25 },
+  "Serious":           { ...D, floatAmp: 0.028, floatFreq: 0.30, swayAmp: 0.006, swayFreq: 0.20 },
+  "Very Serious":      { ...D, floatAmp: 0.022, floatFreq: 0.25, swayAmp: 0.004, swayFreq: 0.15 },
+  "Interest":          { ...D, floatAmp: 0.085, floatFreq: 0.70, swayAmp: 0.022, swayFreq: 0.55, yOffset:  0.10, zRotOffset: -0.06 },
+  "Not Interest":      { ...D, floatAmp: 0.042, floatFreq: 0.40, swayAmp: 0.012, swayFreq: 0.30, yOffset: -0.08, zRotOffset:  0.045 },
+  "Very Not Interest": { ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25, yOffset: -0.10, zRotOffset:  0.060 },
+  "Fun":               { ...D, floatAmp: 0.120, floatFreq: 1.00, swayAmp: 0.032, swayFreq: 0.85, yOffset:  0.12 },
+  "Angry":             { ...D, floatAmp: 0.025, floatFreq: 0.50, swayAmp: 0.012, xShakeAmp: 0.080, xShakeFreq: 9.0 },
+  "Sad":               { ...D, floatAmp: 0.025, floatFreq: 0.25, swayAmp: 0.008, swayFreq: 0.20, yOffset: -0.15, zRotOffset: 0.06, opacity: 0.85 },
+  "Disappoint":        { ...D, floatAmp: 0.032, floatFreq: 0.30, swayAmp: 0.008, swayFreq: 0.22, yOffset: -0.10, zRotOffset: 0.050, opacity: 0.90 },
+  "Tired":             { ...D, floatAmp: 0.018, floatFreq: 0.18, swayAmp: 0.006, swayFreq: 0.14, yOffset: -0.08, zRotOffset: 0.040, opacity: 0.80 },
+  "Embrassed":         { ...D, floatAmp: 0.055, floatFreq: 0.60, swayAmp: 0.065, swayFreq: 3.50 },
+  "Very Embrassed":    { ...D, floatAmp: 0.060, floatFreq: 0.65, swayAmp: 0.090, swayFreq: 4.50 },
+  "Surprise":          { ...D, floatAmp: 0.050, floatFreq: 0.55, swayAmp: 0.016, swayFreq: 0.45, yOffset:  0.14, zRotOffset: -0.04 },
+  "Wink":              { ...D, floatAmp: 0.068, floatFreq: 0.55, swayAmp: 0.028, swayFreq: 0.50, yOffset:  0.05, zRotOffset: -0.05 },
+  "Sleep":             { ...D, floatAmp: 0.014, floatFreq: 0.18, swayAmp: 0.003, swayFreq: 0.12, yOffset: -0.12, zRotOffset:  0.04, opacity: 0.65 },
+  "Closed Sleep":      { ...D, floatAmp: 0.008, floatFreq: 0.14, swayAmp: 0.003, swayFreq: 0.10, yOffset: -0.16, zRotOffset:  0.05, opacity: 0.50 },
+  "Back":              { ...D, floatAmp: 0.055, floatFreq: 0.55, swayAmp: 0.011, swayFreq: 0.35, zRotOffset: 1.5, opacity: 0.35 },
 };
 
-// ── 3D PNG scene ───────────────────────────────────────────────────
+// ── 3D sprite scene ────────────────────────────────────────────────
 type SceneProps = { isSpeaking: boolean; emotion: AmadeusEmotion };
 
 function PNGScene({ isSpeaking, emotion }: SceneProps) {
-  // useTexture suspends until the PNG is loaded; R3F/drei cache it.
-  const texture = useTexture("/kurisu.png");
+  // Fallback texture — always loaded via Suspense; used when sprite is missing.
+  const fallback = useTexture("/kurisu.png");
 
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef  = useRef<THREE.Mesh>(null);
+  // Refs (not state) so texture swaps happen inside useFrame without re-renders.
+  const baseTexRef = useRef<THREE.Texture | null>(null);
+  const openTexRef = useRef<THREE.Texture | null>(null);
+  const hasOpenRef = useRef(false);
+
+  const slug = EMOTION_SLUG[emotion] ?? "default";
+
+  // Load base + open-mouth textures whenever the emotion changes.
+  // THREE.TextureLoader silently calls onError on 404 — no crash.
+  useEffect(() => {
+    baseTexRef.current = null;
+    openTexRef.current = null;
+    hasOpenRef.current = false;
+
+    const loader = new THREE.TextureLoader();
+
+    loader.load(
+      `/sprites/kurisu-${slug}.png`,
+      (t) => { baseTexRef.current = t; },
+      undefined,
+      () => { /* 404 — falls back to /kurisu.png in useFrame */ }
+    );
+
+    loader.load(
+      `/sprites/kurisu-${slug}-open.png`,
+      (t) => { openTexRef.current = t; hasOpenRef.current = true; },
+      undefined,
+      () => { /* no open variant — body sway used instead */ }
+    );
+  }, [slug]);
 
   useFrame((state, delta) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    const t = state.clock.elapsedTime;
+    const t   = state.clock.elapsedTime;
     const cfg = EMOTION_CONFIGS[emotion] ?? EMOTION_CONFIGS["Default"];
+    const mat = mesh.material as THREE.MeshBasicMaterial;
 
-    // Target values driven by the current emotion config
-    const targetY   = Math.sin(t * cfg.floatFreq) * cfg.floatAmp + cfg.yOffset;
-    const targetZ   = Math.sin(t * cfg.swayFreq)  * cfg.swayAmp  + cfg.zRotOffset;
-    const targetX   = cfg.xShakeAmp > 0
+    // ── Texture swap (article equivalent of sprite-picker) ────────
+    const baseTex = baseTexRef.current ?? fallback;
+    let nextTex: THREE.Texture;
+
+    if (isSpeaking && hasOpenRef.current && openTexRef.current) {
+      // 5 Hz toggle: base ↔ open — replicates GIF mouth animation
+      nextTex = Math.sin(t * Math.PI * 10) > 0 ? openTexRef.current : baseTex;
+    } else {
+      nextTex = baseTex;
+    }
+
+    if (mat.map !== nextTex) {
+      mat.map = nextTex;
+      mat.needsUpdate = true;
+    }
+
+    // ── Body animation ────────────────────────────────────────────
+    const targetY = Math.sin(t * cfg.floatFreq) * cfg.floatAmp + cfg.yOffset;
+    const targetZ = Math.sin(t * cfg.swayFreq)  * cfg.swayAmp  + cfg.zRotOffset;
+    const targetX = cfg.xShakeAmp > 0
       ? Math.sin(t * cfg.xShakeFreq) * cfg.xShakeAmp
       : 0;
 
     if (isSpeaking) {
-      // Micro-sway is additive on top of the emotion base position.
-      mesh.position.y = targetY + Math.sin(t * 14) * 0.022;
-      mesh.rotation.z = targetZ + Math.sin(t * 11) * 0.030;
+      // When mouth sprites handle the talking, dial back body sway so
+      // it doesn't fight the texture toggle visually.
+      const f = hasOpenRef.current ? 0.25 : 1.0;
+      mesh.position.y = targetY + Math.sin(t * 14) * 0.022 * f;
+      mesh.rotation.z = targetZ + Math.sin(t * 11) * 0.030 * f;
       mesh.position.x = targetX;
-      mesh.scale.y = 1 + Math.sin(t * 18) * 0.014;
-      mesh.scale.x = 1 - Math.sin(t * 18) * 0.007;
+      mesh.scale.y    = 1 + Math.sin(t * 18) * 0.014 * f;
+      mesh.scale.x    = 1 - Math.sin(t * 18) * 0.007 * f;
     } else {
       mesh.position.y += (targetY - mesh.position.y) * Math.min(delta * 4, 1);
       mesh.rotation.z += (targetZ - mesh.rotation.z) * Math.min(delta * 3, 1);
@@ -110,8 +192,7 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
       mesh.scale.x    += (1 - mesh.scale.x)           * Math.min(delta * 6, 1);
     }
 
-    // Lerp material opacity for dim/fade emotions (Sad, Sleep, Back…)
-    const mat = mesh.material as THREE.MeshBasicMaterial;
+    // Opacity (Sad, Sleep, Back, etc.)
     mat.opacity += (cfg.opacity - mat.opacity) * Math.min(delta * 3, 1);
   });
 
@@ -122,12 +203,11 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
     <mesh ref={meshRef}>
       <planeGeometry args={[planeW, planeH]} />
       {/*
-       * meshBasicMaterial — unlit, so the PNG colours show exactly as-is.
-       * transparent + alphaTest cuts out the PNG background.
-       * opacity is driven in useFrame via mat.opacity.
+       * Initial map is fallback; useFrame swaps to sprite texture once loaded.
+       * transparent + alphaTest cut out the PNG background.
        */}
       <meshBasicMaterial
-        map={texture}
+        map={fallback}
         transparent
         alphaTest={0.1}
         side={THREE.FrontSide}
@@ -158,9 +238,7 @@ export function AmadeusAvatar({ isSpeaking, isOnline, emotion }: Props) {
       </AnimatePresence>
 
       {/*
-       * Camera sits at z=2 looking at the origin. The PNG plane is centred
-       * there, so no lookAt override is needed.
-       * gl.alpha:true lets the dark CRT panel show around the plane edges.
+       * gl.alpha:true keeps the CRT panel background visible around the sprite.
        */}
       <Canvas
         gl={{ alpha: true, antialias: true }}
