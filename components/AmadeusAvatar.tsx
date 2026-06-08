@@ -24,7 +24,7 @@
  *   opacity. All values lerp smoothly in useFrame.
  *
  * Upgrade path:
- *   Replace PNGScene with VRMScene (see git history) to switch from
+ *   Drop in a VRoid `.vrm` file + `@pixiv/three-vrm` to switch from
  *   sprites to a full 3D VRM avatar — Canvas/props stay identical.
  */
 

@@ -19,7 +19,6 @@
 | Styling | Tailwind CSS v4 |
 | Animation | Framer Motion |
 | 3D Rendering | React Three Fiber (`@react-three/fiber`, `@react-three/drei`, `three`) |
-| VRM Avatars | `@pixiv/three-vrm` |
 | Auth + DB | Supabase (`@supabase/supabase-js`) |
 | Vector DB | Supabase pgvector |
 | LLM | Groq API (`groq-sdk`, Llama 3.3 70B) |
