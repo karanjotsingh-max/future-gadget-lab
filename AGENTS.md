@@ -151,7 +151,7 @@ Reading Steiner · El Psy Kongroo · world line (two words, lowercase) · Hououi
 - `any` types
 - `useEffect` for data fetching
 - Supabase calls that bypass RLS
-- Copyrighted Steins;Gate assets (art, music, sprites) — this includes VN sprite rips (`CRS_J*.png`), OST audio, and official character art even for the emotion system; use AI-generated originals instead
+
 - New dependencies without updating the stack table
 - Phase N+1 feature work while Phase N is unshipped
 
