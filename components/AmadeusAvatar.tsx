@@ -38,9 +38,12 @@ type EmotionConfig = {
   opacity: number;     // material opacity [0–1]
 };
 
+// All amplitudes are calibrated for a 320×420 canvas at z=2, fov=60.
+// At that view distance 1 Three.js unit ≈ 182 px, so floatAmp:0.07 ≈ ±13 px
+// of vertical travel — clearly visible without being distracting.
 const D: EmotionConfig = {
-  floatAmp: 0.025, floatFreq: 0.6,
-  swayAmp: 0.005, swayFreq: 0.4,
+  floatAmp: 0.070, floatFreq: 0.55,
+  swayAmp: 0.018, swayFreq: 0.38,
   xShakeAmp: 0, xShakeFreq: 0,
   yOffset: 0, zRotOffset: 0, opacity: 1,
 };
@@ -48,25 +51,25 @@ const D: EmotionConfig = {
 const EMOTION_CONFIGS: Record<string, EmotionConfig> = {
   "Default":          { ...D },
   "Very Default":     { ...D },
-  "Calm":             { ...D, floatAmp: 0.012, floatFreq: 0.35, swayAmp: 0.003, swayFreq: 0.25 },
-  "Serious":          { ...D, floatAmp: 0.010, floatFreq: 0.30, swayAmp: 0.002, swayFreq: 0.20 },
-  "Very Serious":     { ...D, floatAmp: 0.008, floatFreq: 0.25, swayAmp: 0.001, swayFreq: 0.15 },
-  "Interest":         { ...D, floatAmp: 0.030, floatFreq: 0.70, swayAmp: 0.008, swayFreq: 0.55, yOffset: 0.04, zRotOffset: -0.03 },
-  "Not Interest":     { ...D, floatAmp: 0.015, floatFreq: 0.40, swayAmp: 0.004, swayFreq: 0.30, yOffset: -0.03, zRotOffset: 0.02 },
-  "Very Not Interest":{ ...D, floatAmp: 0.012, floatFreq: 0.35, swayAmp: 0.003, swayFreq: 0.25, yOffset: -0.04, zRotOffset: 0.03 },
-  "Fun":              { ...D, floatAmp: 0.045, floatFreq: 1.00, swayAmp: 0.012, swayFreq: 0.85, yOffset: 0.05 },
-  "Angry":            { ...D, floatAmp: 0.010, floatFreq: 0.50, xShakeAmp: 0.030, xShakeFreq: 9.0 },
-  "Sad":              { ...D, floatAmp: 0.010, floatFreq: 0.25, swayAmp: 0.003, swayFreq: 0.20, yOffset: -0.06, zRotOffset: 0.03, opacity: 0.85 },
-  "Disappoint":       { ...D, floatAmp: 0.012, floatFreq: 0.30, swayAmp: 0.003, swayFreq: 0.22, yOffset: -0.04, zRotOffset: 0.025, opacity: 0.90 },
-  "Tired":            { ...D, floatAmp: 0.007, floatFreq: 0.18, swayAmp: 0.002, swayFreq: 0.14, yOffset: -0.03, zRotOffset: 0.018, opacity: 0.80 },
-  "Embrassed":        { ...D, floatAmp: 0.020, floatFreq: 0.60, swayAmp: 0.025, swayFreq: 3.50 },
-  "Very Embrassed":   { ...D, floatAmp: 0.022, floatFreq: 0.65, swayAmp: 0.035, swayFreq: 4.50 },
-  "Surprise":         { ...D, floatAmp: 0.018, floatFreq: 0.55, swayAmp: 0.006, swayFreq: 0.45, yOffset: 0.06, zRotOffset: -0.02 },
-  "Wink":             { ...D, floatAmp: 0.025, floatFreq: 0.55, swayAmp: 0.010, swayFreq: 0.50, yOffset: 0.02, zRotOffset: -0.025 },
-  "Sleep":            { ...D, floatAmp: 0.005, floatFreq: 0.18, swayAmp: 0.001, swayFreq: 0.12, yOffset: -0.05, zRotOffset: 0.02, opacity: 0.65 },
-  "Closed Sleep":     { ...D, floatAmp: 0.003, floatFreq: 0.14, swayAmp: 0.001, swayFreq: 0.10, yOffset: -0.07, zRotOffset: 0.025, opacity: 0.50 },
+  "Calm":             { ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25 },
+  "Serious":          { ...D, floatAmp: 0.028, floatFreq: 0.30, swayAmp: 0.006, swayFreq: 0.20 },
+  "Very Serious":     { ...D, floatAmp: 0.022, floatFreq: 0.25, swayAmp: 0.004, swayFreq: 0.15 },
+  "Interest":         { ...D, floatAmp: 0.085, floatFreq: 0.70, swayAmp: 0.022, swayFreq: 0.55, yOffset: 0.10, zRotOffset: -0.06 },
+  "Not Interest":     { ...D, floatAmp: 0.042, floatFreq: 0.40, swayAmp: 0.012, swayFreq: 0.30, yOffset: -0.08, zRotOffset: 0.045 },
+  "Very Not Interest":{ ...D, floatAmp: 0.035, floatFreq: 0.35, swayAmp: 0.008, swayFreq: 0.25, yOffset: -0.10, zRotOffset: 0.060 },
+  "Fun":              { ...D, floatAmp: 0.120, floatFreq: 1.00, swayAmp: 0.032, swayFreq: 0.85, yOffset: 0.12 },
+  "Angry":            { ...D, floatAmp: 0.025, floatFreq: 0.50, swayAmp: 0.012, xShakeAmp: 0.080, xShakeFreq: 9.0 },
+  "Sad":              { ...D, floatAmp: 0.025, floatFreq: 0.25, swayAmp: 0.008, swayFreq: 0.20, yOffset: -0.15, zRotOffset: 0.06, opacity: 0.85 },
+  "Disappoint":       { ...D, floatAmp: 0.032, floatFreq: 0.30, swayAmp: 0.008, swayFreq: 0.22, yOffset: -0.10, zRotOffset: 0.050, opacity: 0.90 },
+  "Tired":            { ...D, floatAmp: 0.018, floatFreq: 0.18, swayAmp: 0.006, swayFreq: 0.14, yOffset: -0.08, zRotOffset: 0.040, opacity: 0.80 },
+  "Embrassed":        { ...D, floatAmp: 0.055, floatFreq: 0.60, swayAmp: 0.065, swayFreq: 3.50 },
+  "Very Embrassed":   { ...D, floatAmp: 0.060, floatFreq: 0.65, swayAmp: 0.090, swayFreq: 4.50 },
+  "Surprise":         { ...D, floatAmp: 0.050, floatFreq: 0.55, swayAmp: 0.016, swayFreq: 0.45, yOffset: 0.14, zRotOffset: -0.04 },
+  "Wink":             { ...D, floatAmp: 0.068, floatFreq: 0.55, swayAmp: 0.028, swayFreq: 0.50, yOffset: 0.05, zRotOffset: -0.05 },
+  "Sleep":            { ...D, floatAmp: 0.014, floatFreq: 0.18, swayAmp: 0.003, swayFreq: 0.12, yOffset: -0.12, zRotOffset: 0.04, opacity: 0.65 },
+  "Closed Sleep":     { ...D, floatAmp: 0.008, floatFreq: 0.14, swayAmp: 0.003, swayFreq: 0.10, yOffset: -0.16, zRotOffset: 0.05, opacity: 0.50 },
   // "Back" — she turns away: extreme tilt + low opacity
-  "Back":             { ...D, floatAmp: 0.020, floatFreq: 0.55, swayAmp: 0.004, swayFreq: 0.35, zRotOffset: 1.5, opacity: 0.35 },
+  "Back":             { ...D, floatAmp: 0.055, floatFreq: 0.55, swayAmp: 0.011, swayFreq: 0.35, zRotOffset: 1.5, opacity: 0.35 },
 };
 
 // ── 3D PNG scene ───────────────────────────────────────────────────
@@ -94,11 +97,11 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
 
     if (isSpeaking) {
       // Micro-sway is additive on top of the emotion base position.
-      mesh.position.y = targetY + Math.sin(t * 14) * 0.008;
-      mesh.rotation.z = targetZ + Math.sin(t * 11) * 0.012;
+      mesh.position.y = targetY + Math.sin(t * 14) * 0.022;
+      mesh.rotation.z = targetZ + Math.sin(t * 11) * 0.030;
       mesh.position.x = targetX;
-      mesh.scale.y = 1 + Math.sin(t * 18) * 0.006;
-      mesh.scale.x = 1 - Math.sin(t * 18) * 0.003;
+      mesh.scale.y = 1 + Math.sin(t * 18) * 0.014;
+      mesh.scale.x = 1 - Math.sin(t * 18) * 0.007;
     } else {
       mesh.position.y += (targetY - mesh.position.y) * Math.min(delta * 4, 1);
       mesh.rotation.z += (targetZ - mesh.rotation.z) * Math.min(delta * 3, 1);
