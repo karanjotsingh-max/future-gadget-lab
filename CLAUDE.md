@@ -8,8 +8,8 @@
 ## Current Position
 
 **Phase 1 — Amadeus chatbot**
-**Last completed step: 1.3c** (R3F canvas with `kurisu.png` as animated 3D plane)
-**Next step: 1.3d** — Emotion-driven avatar (LLM outputs `[Emotion]` tag; frontend swaps animation/expression)
+**Last completed step: 1.3d** (emotion-driven avatar — `[Emotion]` tag parsed from LLM stream; 20-state animation configs drive `useFrame`)
+**Next step: 1.4** — Supabase auth + messages table
 
 ---
 
@@ -21,6 +21,7 @@
 | `fix: camera aim + hydration` | Camera was pointing at empty air above model; `loadHistory` hydration mismatch fixed |
 | `feat: paper-cutout avatar` | Switched from VRM to `kurisu.png` as R3F texture on a 3D plane — idle float + speaking sway |
 | `docs: emotion system in AGENTS.md` | Step 1.3d added to phase table; 20-emotion canonical list documented; `mio/amadeus` TTS noted |
+| `feat: step 1.3d` | Prompt v1.2.0 + API route emotion extraction + page emotion state + avatar EMOTION_CONFIGS |
 
 ### Current state of `components/AmadeusAvatar.tsx`
 - `PNGScene` component: loads `/kurisu.png` via `useTexture` (drei), renders on a `2.02 × 2.8` plane
