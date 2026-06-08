@@ -8,54 +8,78 @@
 ## Current Position
 
 **Phase 1 — Amadeus chatbot**
-**Last completed step: 1.3c** (3D talking avatar — React Three Fiber + VRM)
-**Next step: 1.4** — Supabase auth + messages table
+**Last completed step: 1.3c** (R3F canvas with `kurisu.png` as animated 3D plane)
+**Next step: 1.3d** — Emotion-driven avatar (LLM outputs `[Emotion]` tag; frontend swaps animation/expression)
 
 ---
 
-## What Was Just Built (1.3c)
+## What Was Built This Session
 
-| File | What changed |
+| Commit | What |
 |---|---|
-| `components/AmadeusAvatar.tsx` | New R3F Canvas component — loads `public/kurisu.vrm`, drives mouth + blink animations, transparent bg, CRT vignette |
-| `app/amadeus/page.tsx` | Replaced `KurisuAvatar` PNG with `AmadeusAvatar` (dynamic import, `ssr: false`); fixed `loadHistory` lazy init |
-| `public/kurisu.vrm` | VRM1_Constraint_Twist_Sample.vrm — CC BY 4.0 from Pixiv/three-vrm (10.7 MB) |
-| `package.json` | Added `three`, `@react-three/fiber`, `@react-three/drei`, `@pixiv/three-vrm` |
-| `AGENTS.md` | Stack table updated; Key Decisions updated; 1.3c marked Done; 1.4 marked Next |
+| `feat: step 1.3c` | R3F Canvas added; `AmadeusAvatar.tsx` created; VRM loaded initially |
+| `fix: camera aim + hydration` | Camera was pointing at empty air above model; `loadHistory` hydration mismatch fixed |
+| `feat: paper-cutout avatar` | Switched from VRM to `kurisu.png` as R3F texture on a 3D plane — idle float + speaking sway |
+| `docs: emotion system in AGENTS.md` | Step 1.3d added to phase table; 20-emotion canonical list documented; `mio/amadeus` TTS noted |
 
-Last commit: `feat: step 1.3c - 3D talking avatar with React Three Fiber + VRM` on `main`
+### Current state of `components/AmadeusAvatar.tsx`
+- `PNGScene` component: loads `/kurisu.png` via `useTexture` (drei), renders on a `2.02 × 2.8` plane
+- `useFrame` drives: idle float (sin 0.6 Hz), side sway (sin 0.4 Hz), speaking micro-sway (~11 Hz) + Y scale pulse
+- Canvas: `gl={{ alpha: true }}`, camera at `[0, 0, 2]`, fov 60 — plane centred at origin
+- CRT vignette overlay + speaking glow ring (Framer Motion) unchanged
+- Dynamically imported in `amadeus/page.tsx` with `ssr: false`
 
 ---
 
-## What Step 1.4 Needs to Build
+## What Step 1.3d Needs to Build
 
-**Goal:** Replace `localStorage` guest mode with real Supabase auth + persistent message history.
+**Goal:** Kurisu prepends `[Emotion]` to every reply. The API strips it and sends it as a separate signal. The avatar plays a different animation variant per emotion.
 
-| Sub-task | Detail |
+### Sub-tasks
+
+| # | Task | File(s) |
+|---|---|---|
+| A | Prompt update v1.2.0 | `lib/prompts/amadeus.ts` — add emotion instruction + 20-emotion list |
+| B | API route: strip tag | `app/api/amadeus/chat/route.ts` — parse `[Emotion]` from first chunk, send as `X-Amadeus-Emotion` response header before stream starts |
+| C | Page: receive emotion | `app/amadeus/page.tsx` — read header after fetch, store in `emotion` state |
+| D | Avatar: react to emotion | `components/AmadeusAvatar.tsx` — map emotion string → animation params (speed, amplitude, tilt direction) |
+
+### 20-emotion canonical list (from AGENTS.md)
+```
+Default · Very Default · Calm · Serious · Very Serious · Interest · Very Not Interest
+Not Interest · Fun · Angry · Sad · Disappoint · Tired · Embrassed · Very Embrassed
+Surprise · Wink · Sleep · Closed Sleep · Back
+```
+
+### Emotion → animation mapping (suggested)
+| Emotion | Avatar behaviour |
 |---|---|
-| Supabase project | Create project at supabase.com, add keys to `.env.local` and `.env.example` |
-| Migration `001_messages.sql` | `messages` table: `id`, `user_id` (FK to auth.users), `role` (user/assistant), `content`, `created_at`. RLS: users read/write only their own rows. |
-| Magic link auth | `lib/supabase/client.ts` already exists. Add sign-in UI (minimal — email input + "Send link" button). |
-| Guest migration | On first sign-in, bulk-insert `localStorage` history into the DB, then clear localStorage. |
-| Swap history source | After auth, load messages from Supabase instead of localStorage. `saveHistory` writes to Supabase. |
-
-**Skills to use:**
-- `fgl-new-migration` — for `001_messages.sql`
-- `fgl-step-by-step` — follow one subtask at a time
+| `Default` / `Very Default` | Standard idle float |
+| `Calm` / `Serious` / `Very Serious` | Slower sway, reduced amplitude |
+| `Interest` | Slight lean forward (negative Z tilt) |
+| `Fun` | Faster bounce, +Y offset |
+| `Angry` | Fast sharp side-shake on X |
+| `Sad` / `Disappoint` | Slow downward drift, dim filter |
+| `Tired` | Very slow sway, slight droop |
+| `Embrassed` / `Very Embrassed` | Quick head-turn wiggle |
+| `Surprise` | Sharp scale pop then settle |
+| `Wink` | Gentle forward tilt |
+| `Sleep` / `Closed Sleep` | Near-still, dim opacity |
+| `Back` | Flip plane 180° (turn away) |
 
 ---
 
-## Existing File Map (Phase 1 so far)
+## Existing File Map
 
 ```
 app/
   (marketing)/page.tsx      ← Landing — world line meter + 3 gadget cards
-  amadeus/page.tsx          ← Video-call UI (client component, "use client")
+  amadeus/page.tsx          ← Video-call UI ("use client"), messages state, TTS
   api/amadeus/chat/route.ts ← Streaming Groq route (server only)
   layout.tsx                ← Site shell: nav header + footer
 
 components/
-  AmadeusAvatar.tsx         ← R3F 3D avatar (dynamic import, ssr:false)
+  AmadeusAvatar.tsx         ← R3F paper-cutout avatar (dynamic import, ssr:false)
   GadgetCard.tsx            ← Landing page gadget card
   WorldLineMeter.tsx        ← Animated divergence meter in the nav
 
@@ -67,8 +91,8 @@ lib/
     client.ts               ← Browser-side Supabase client (public anon key)
 
 public/
-  kurisu.png                ← AI-generated Kurisu avatar (kept as fallback)
-  kurisu.vrm                ← VRM1 3D model (CC BY 4.0, Pixiv, 10.7 MB)
+  kurisu.png                ← AI-generated Kurisu avatar (used as 3D plane texture)
+  kurisu.vrm                ← VRM1 placeholder (not currently used — kept for VRM upgrade path)
 
 constants/theme.ts          ← Color tokens, font variables, motion presets
 styles/crt.css              ← .crt-frame .crt-scanlines .crt-flicker .glitch-text
@@ -77,10 +101,10 @@ supabase/migrations/        ← (empty — first migration in step 1.4)
 
 ---
 
-## Key env vars needed
+## Key env vars
 
 ```
-GROQ_API_KEY=                         # already set in .env.local
+GROQ_API_KEY=                         # set in .env.local
 NEXT_PUBLIC_SUPABASE_URL=             # needed for 1.4
 NEXT_PUBLIC_SUPABASE_ANON_KEY=        # needed for 1.4
 SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_PUBLIC_)
@@ -90,10 +114,10 @@ SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_
 
 ## Known Issues / Watch-outs
 
-- `public/kurisu.vrm` is committed to git (10.7 MB). Add to `.gitignore` if repo size becomes a problem; load from CDN instead and update the URL in `AmadeusAvatar.tsx`.
-- The VRM model is `VRM1_Constraint_Twist_Sample.vrm` — a neutral anime character, not Kurisu. Replace `public/kurisu.vrm` with a VRoid Studio export whenever a custom model is ready.
-- Camera position `[0, 1.45, 0.7]` + model offset `y = -1.45` assumes the VRM model is ~1.7 m tall. Different models may need tweaking.
-- Dev server (`npm run dev`) running on port 3000 with Turbopack.
+- `public/kurisu.vrm` is 10.7 MB committed to git — add to `.gitignore` if size becomes a problem.
+- `kurisu.png` background is not transparent — the R3F `alphaTest={0.1}` cuts out near-white pixels. If the PNG has a white background around Kurisu it will show a box. Fix: use a PNG with an actual transparent background.
+- Dev server on port 3000 with Turbopack (`npm run dev` already running in terminal 3).
+- `THREE.Clock` deprecation warning in browser console — comes from R3F internals, not our code. Harmless.
 
 ---
 
