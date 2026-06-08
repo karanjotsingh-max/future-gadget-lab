@@ -23,6 +23,7 @@
 | Auth + DB | Supabase (`@supabase/supabase-js`) |
 | Vector DB | Supabase pgvector |
 | LLM | Groq API (`groq-sdk`, Llama 3.3 70B) |
+| TTS | Edge TTS (`edge-tts-universal`, server-side, free) |
 | Validation | Zod |
 | Hosting | Vercel |
 

@@ -183,7 +183,20 @@ Quality gates: `tsc` 0 errors · `eslint` 0 errors · committed on `main`
 
 ---
 
-#### 1.4 — Supabase Auth + Message Storage ⬜ After 1.3c
+#### 1.3e — Edge TTS Voice Upgrade ✅ Done (2026-06-08)
+
+Replaced Web Speech API (generic browser voice) with Microsoft Edge TTS via `edge-tts-universal`.
+
+- **New route** — `app/api/amadeus/tts/route.ts` — POST `{ text }` → `audio/mpeg`; rate-limited; Zod-validated
+- **Voice** — `en-US-JennyNeural` — young female, natural intonation, closest free match to Kurisu's English VA profile
+- **Playback** — `new Audio(blob)` via Web Audio API; blob URL revoked after playback ends (no memory leaks)
+- **`isSpeaking`** state activates on actual audio play start, not on fetch start — avatar mouth animation now accurately tracks speech
+- **Voice toggle** — stops audio via `audio.pause()` instead of the old `speechSynthesis.cancel()`
+- **Future upgrade** — `Loke-60000/christina-TTS` (Qwen3-TTS 0.9B fine-tuned on Kurisu's English voice) wired in Phase 2 via Python sidecar. `/api/amadeus/tts` will proxy to `CHRISTINA_TTS_URL` when set, falling back to Edge TTS.
+
+---
+
+#### 1.4 — Supabase Auth + Message Storage ⬜ After 1.3e
 
 Hook up real logins so conversation history persists in the database.
 
@@ -230,6 +243,25 @@ What we'll build:
 What you'll learn:
 - **Structured JSON output from an LLM** — using `response_format: { type: "json_object" }` to force the model to return exact data shapes
 - **Zod output validation** — why we validate the LLM's response before sending it to the client (the model can lie)
+
+### Amadeus TTS Upgrade — Christina Voice
+
+**The goal:** Replace Edge TTS (generic Microsoft voice) with `Loke-60000/christina-TTS` — a Qwen3-TTS 0.9B model fine-tuned on Kurisu's English voice. Free, no API key needed, runs locally with CUDA.
+
+What we'll build:
+- `python-sidecar/tts_server.py` — FastAPI server wrapping `qwen-tts`; listens on port 8001
+- `python-sidecar/requirements.txt` — `qwen-tts`, `fastapi`, `uvicorn`
+- Update `app/api/amadeus/tts/route.ts` — proxy to `CHRISTINA_TTS_URL` when env var is set; falls back to Edge TTS
+- Vercel deployment: host sidecar on a separate VM or Modal.com (free tier covers ~1000 requests/day)
+
+What you'll learn:
+- **Python sidecar pattern** — running a separate Python service alongside a Node.js app
+- **Graceful degradation** — how to fall back to a simpler solution when the primary service is unavailable
+- **Model hosting** — how to expose a HuggingFace model as an HTTP API
+
+Speaker to use: `christina` (ID 3000) for English. Credit: Loke-60000 on HuggingFace.
+
+---
 
 ### Amadeus RAG Upgrade
 

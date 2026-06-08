@@ -97,9 +97,9 @@ const EMOTION_CONFIGS: Record<string, EmotionConfig> = {
   "Sad":               { ...D, floatAmp: 0.015, floatFreq: 0.25, yOffset: -0.08, opacity: 0.85 },
   "Disappoint":        { ...D, floatAmp: 0.020, floatFreq: 0.30, yOffset: -0.06, opacity: 0.90 },
   "Tired":             { ...D, floatAmp: 0.010, floatFreq: 0.18, yOffset: -0.05, opacity: 0.80 },
-  // Embrassed: fast Z-sway only — looks like a nervous head-wiggle on 2D sprite
-  "Embrassed":         { ...D, floatAmp: 0.028, floatFreq: 0.60, swayAmp: 0.018, swayFreq: 3.50 },
-  "Very Embrassed":    { ...D, floatAmp: 0.032, floatFreq: 0.65, swayAmp: 0.025, swayFreq: 4.50 },
+  // Embrassed: slow X-sway (nervous side-shift) — Z rotation looks like a pendulum on flat sprites
+  "Embrassed":         { ...D, floatAmp: 0.028, floatFreq: 0.60, xShakeAmp: 0.014, xShakeFreq: 1.80 },
+  "Very Embrassed":    { ...D, floatAmp: 0.032, floatFreq: 0.65, xShakeAmp: 0.020, xShakeFreq: 2.50 },
   "Surprise":          { ...D, floatAmp: 0.035, floatFreq: 0.55, yOffset:  0.08 },
   "Wink":              { ...D, floatAmp: 0.040, floatFreq: 0.55, yOffset:  0.03 },
   "Sleep":             { ...D, floatAmp: 0.008, floatFreq: 0.18, yOffset: -0.08, opacity: 0.65 },
@@ -189,7 +189,7 @@ function PNGScene({ isSpeaking, emotion }: SceneProps) {
     } else {
       // Mouth sprites active (or idle): smooth lerp — no jitter
       mesh.position.y += (targetY - mesh.position.y) * Math.min(delta * 4, 1);
-      mesh.rotation.z += (targetZ - mesh.rotation.z) * Math.min(delta * 3, 1);
+      mesh.rotation.z += (targetZ - mesh.rotation.z) * Math.min(delta * 8, 1);
       mesh.position.x += (targetX - mesh.position.x) * Math.min(delta * 8, 1);
       mesh.scale.y    += (1 - mesh.scale.y)           * Math.min(delta * 6, 1);
       mesh.scale.x    += (1 - mesh.scale.x)           * Math.min(delta * 6, 1);

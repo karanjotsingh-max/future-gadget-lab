@@ -6,7 +6,7 @@
  * Layout (true video-call):
  *   - Top ~75 vh : video feed panel — avatar centred, full-width
  *   - Bottom ~25 vh : compact chat strip — messages + input
- * Voice:  Web Speech API speaks every completed response
+ * Voice:  Edge TTS via /api/amadeus/tts — audio/mpeg played via Web Audio API
  * Avatar: React Three Fiber + VRM 3D model (mouth/eye animation)
  */
 
@@ -51,40 +51,6 @@ function saveHistory(messages: Message[]): void {
   } catch {
     // localStorage unavailable — silently skip
   }
-}
-
-function pickVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === "undefined") return null;
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = [
-    "Google UK English Female",
-    "Google US English",
-    "Microsoft Zira",
-    "Samantha",
-  ];
-  for (const name of preferred) {
-    const v = voices.find((v) => v.name === name);
-    if (v) return v;
-  }
-  return (
-    voices.find((v) => v.lang.startsWith("en") && /female/i.test(v.name)) ??
-    voices.find((v) => v.lang.startsWith("en")) ??
-    voices[0] ??
-    null
-  );
-}
-
-function speak(text: string, onEnd: () => void): void {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.voice = pickVoice();
-  utt.rate = 0.92;
-  utt.pitch = 1.15;
-  utt.volume = 1;
-  utt.onend = onEnd;
-  utt.onerror = onEnd;
-  window.speechSynthesis.speak(utt);
 }
 
 // ─── HUD corner brackets ──────────────────────────────────────
@@ -141,6 +107,7 @@ export default function AmadeusPage() {
   const [emotion, setEmotion] = useState<AmadeusEmotion>("Default");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Load localStorage history after mount (not during render — avoids SSR mismatch).
   useEffect(() => {
@@ -158,12 +125,38 @@ export default function AmadeusPage() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  useEffect(() => () => { window.speechSynthesis?.cancel(); }, []);
+  useEffect(() => () => {
+    audioRef.current?.pause();
+    if (audioRef.current?.src) URL.revokeObjectURL(audioRef.current.src);
+    audioRef.current = null;
+  }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  const speakEdgeTTS = useCallback(async (text: string, onEnd: () => void) => {
+    try {
+      const res = await fetch("/api/amadeus/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) { onEnd(); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); onEnd(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); onEnd(); };
+      await audio.play();
+    } catch {
+      onEnd();
+    }
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      if (audioRef.current.src) URL.revokeObjectURL(audioRef.current.src);
+      audioRef.current = null;
+    }
   }, []);
 
   const sendMessage = useCallback(async () => {
@@ -179,7 +172,7 @@ export default function AmadeusPage() {
     setIsLoading(true);
     setStreamingId(assistantId);
     setEmotion("Default");
-    window.speechSynthesis?.cancel();
+    stopAudio();
     setIsSpeaking(false);
 
     const history = [
@@ -217,7 +210,7 @@ export default function AmadeusPage() {
 
       if (voiceEnabled && accumulated.trim()) {
         setIsSpeaking(true);
-        speak(accumulated, () => setIsSpeaking(false));
+        void speakEdgeTTS(accumulated, () => setIsSpeaking(false));
       }
 
       setMessages((prev) => {
@@ -239,7 +232,7 @@ export default function AmadeusPage() {
       setStreamingId(null);
       inputRef.current?.focus();
     }
-  }, [input, isLoading, messages, voiceEnabled]);
+  }, [input, isLoading, messages, voiceEnabled, speakEdgeTTS, stopAudio]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); }
@@ -248,12 +241,12 @@ export default function AmadeusPage() {
   const clearHistory = () => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
-    window.speechSynthesis?.cancel();
+    stopAudio();
     setIsSpeaking(false);
   };
 
   const toggleVoice = () => {
-    if (voiceEnabled) { window.speechSynthesis?.cancel(); setIsSpeaking(false); }
+    if (voiceEnabled) { stopAudio(); setIsSpeaking(false); }
     setVoiceEnabled((v) => !v);
   };
 

@@ -8,7 +8,7 @@
 ## Current Position
 
 **Phase 1 — Amadeus chatbot**
-**Last completed step: 1.3d** — Full emotion-driven sprite avatar + prompt v1.3.1 tuned and tested
+**Last completed step: 1.3e** — Edge TTS (`edge-tts-universal`) replaces Web Speech API
 **Next step: 1.4** — Supabase auth + messages table
 
 ---
@@ -27,6 +27,8 @@
 | `fix: prompt v1.3.1` | Cut max_tokens 600→220; terse 1-2 sentence replies; shorten few-shot examples; add `scripts/test-emotions.mjs` |
 | `fix: in-world error message + switch model to qwen3-32b` | Replace `[CONNECTION ERROR: ...]` bubble with `...[ TRANSMISSION INTERRUPTED ]`; API 500 returns plain text |
 | `chore: switch model to llama-4-scout` | qwen3-32b abandoned (slow — thinking mode); switched to `meta-llama/llama-4-scout-17b-16e-instruct` |
+| `feat: step 1.3e — Edge TTS` | Replace Web Speech API with `edge-tts-universal`; new `/api/amadeus/tts` route; `en-US-JennyNeural` voice |
+| `fix: prompt v1.4.0 + avatar pendulum` | 10 few-shot pairs; tighter emotion mapping; remove Z-rotation from Embrassed (pendulum fix); 14-15/20 emotion accuracy |
 
 ---
 
@@ -39,11 +41,11 @@
 | `max_tokens` | 220 |
 | `temperature` | 0.85 |
 | Free tier limit | 100k TPD per model (separate bucket from llama-3.3-70b) |
-| Prompt version | v1.3.1 |
-| Few-shot pairs | 6 (in `AMADEUS_FEW_SHOT`, injected between system + user messages) |
+| Prompt version | v1.4.0 |
+| Few-shot pairs | 10 (in `AMADEUS_FEW_SHOT`, injected between system + user messages) |
 
-**Tested emotion accuracy (manual):** ~80% correct tags, all replies short + in-character.
-Known misfire: "Feelings for Okabe?" returns `Tired` instead of `Embrassed` — acceptable.
+**Tested emotion accuracy (automated):** 14-15/20 (70-75%) on `test-emotions.mjs`.
+Known hard ceiling: `Calm` vs `Tired` for same topic requires conversation history. `Very Serious` vs `Serious` is near-identical. Remaining misfires are acceptable for real usage.
 
 ### Gemini migration (future option)
 If Groq limits become a problem: Gemini 2.0 Flash via AI Studio free tier gives **1M TPD** (10×).
@@ -89,6 +91,7 @@ app/
   amadeus/page.tsx          ← Video-call UI ("use client"), messages state, TTS, emotion state
   api/amadeus/chat/route.ts ← Streaming route; buffers first chunks to extract [Emotion];
                                sends X-Amadeus-Emotion header before streaming clean text
+  api/amadeus/tts/route.ts  ← POST { text } → audio/mpeg via edge-tts-universal (en-US-JennyNeural)
   layout.tsx                ← Site shell: nav header + footer
 
 components/
@@ -141,6 +144,8 @@ SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_
 - `alphaTest={0.1}` on `meshBasicMaterial` cuts out semi-transparent pixels. VN sprites have transparent backgrounds — works correctly.
 - Groq free tier: 100k TPD. Running `test-emotions.mjs` (20 requests) burns ~1,500 tokens — run sparingly.
 - **Do not use `Invoke-WebRequest` to test the API** — it hangs on chunked streaming responses. Use `node -e "fetch(...)"` instead.
+- Edge TTS (`edge-tts-universal`) adds ~1s latency before audio starts (TTS round-trip to Microsoft's servers). This is expected. The `isSpeaking` state triggers during playback, not during fetch — avatar mouth animation starts when audio actually plays.
+- TTS Phase 2 upgrade: `Loke-60000/christina-TTS` (Qwen3-TTS 0.9B fine-tuned on Kurisu's English voice). Requires Python sidecar + CUDA. `/api/amadeus/tts` should proxy to it when `CHRISTINA_TTS_URL` env var is set, falling back to Edge TTS.
 
 ---
 
