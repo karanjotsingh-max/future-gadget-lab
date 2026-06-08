@@ -113,6 +113,22 @@ type Props = { isSpeaking: boolean; isOnline: boolean };
 export function AmadeusAvatar({ isSpeaking, isOnline }: Props) {
   return (
     <div className="relative" style={{ width: "320px", height: "420px" }}>
+      {/* PNG fallback — visible behind the canvas while VRM is loading
+          or if no VRM model is present yet. Canvas is transparent so
+          once the VRM loads it renders on top of this image. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/kurisu.png"
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-contain"
+        style={{
+          filter: isOnline
+            ? "drop-shadow(0 0 14px rgba(123,47,190,0.4))"
+            : "grayscale(0.7) opacity(0.25)",
+        }}
+      />
+
       {/* Speaking glow ring */}
       <AnimatePresence>
         {isSpeaking && (
@@ -129,10 +145,8 @@ export function AmadeusAvatar({ isSpeaking, isOnline }: Props) {
       </AnimatePresence>
 
       {/*
-       * gl={{ alpha: true }} → transparent canvas background so the dark
-       * CRT panel behind shows through.
-       * camera.position z=0.7, y=1.45 combined with CameraLookAt gives a
-       * tight bust-shot framing of the head.
+       * gl={{ alpha: true }} → transparent canvas so the PNG fallback
+       * behind shows through until the VRM finishes loading.
        */}
       <Canvas
         gl={{ alpha: true, antialias: true }}
