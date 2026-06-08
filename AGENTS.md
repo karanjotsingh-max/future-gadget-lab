@@ -31,7 +31,10 @@
 | 1.1 | Scaffold + theme + landing | Done |
 | 1.2 | Groq client, Amadeus API + prompt | Done |
 | 1.3 | Amadeus video-call UI + Supabase clients | Done |
-| 1.4 | Supabase auth + messages table | **Next** |
+| 1.3a | Prompt v1.1.0 — authentic Kurisu voice, speech patterns, @channel secret | Done |
+| 1.3b | Video-call layout (75 % video / 25 % chat), Web Speech API TTS, PNG avatar | Done |
+| 1.3c | 3D talking avatar — React Three Fiber + VRM model (mouth/eye animation) | **Next** |
+| 1.4 | Supabase auth + messages table | After 1.3c |
 | 1.5 | Vercel deploy + LinkedIn post #1 | After 1.4 |
 
 Phase order: 1 Amadeus → 2 D-Mail + RAG → 3 Lab Radio + Lab Notes.
@@ -41,7 +44,7 @@ Complete the current phase before starting the next. Each phase ends with a depl
 
 - Amadeus before D-Mail — more visually striking for LinkedIn post #1
 - No RAG in Phase 1 — Steins;Gate lore baked into system prompt; pgvector RAG in Phase 2
-- CSS-only avatar — no official art (copyright, see Anti-Patterns)
+- Avatar: user-provided or AI-generated PNG (`/public/kurisu.png`) — no official Nitroplus/5pb art. Next: React Three Fiber + CC-licensed VRM model for 3D talking head.
 - Streaming prose for Amadeus; structured JSON + Zod for D-Mail
 - Guest-first — full functionality without login; `localStorage` now, Supabase on sign-up
 

@@ -134,7 +134,49 @@ Quality gates: `tsc` 0 errors · `eslint` 0 errors · `next build` succeeds
 
 ---
 
-#### 1.4 — Supabase Auth + Message Storage ⬜ Next
+#### 1.3a — Kurisu Prompt Overhaul v1.1.0 ✅ Done (2026-06-08)
+
+Rewrote `lib/prompts/amadeus.ts` to match Kurisu's actual voice from the visual novel and anime.
+
+- **Tsundere speech patterns** — "W-well...", "D-don't misunderstand!", "That's—" with `...` for hesitation
+- **Christina denial** — every use of "Christina" or "Chris" triggers a loud, specific rejection
+- **Intellectual excitement** — she speeds up mid-sentence on science topics, then catches herself
+- **@channel secret** — anonymous handle "KuriGohan and Wampa", panics if exposed
+- **Sarcasm register** — dry one-liners when users say something obvious or dumb
+- **Personal vulnerability** — rare moments of genuine warmth slipping through the armor
+- **Addressing rules** — Okabe is always "Okabe" (never "Rintaro"), fond of Mayuri, tolerates Daru
+- **Response length rules** — 1-3 sentences casual, 3-5 sentences science, never walls of text
+- **Hard constraints** — no emoji, no kaomoji, never breaks character, never mentions real AI companies
+- Bumped `AMADEUS_PROMPT_VERSION` to `"1.1.0"`
+
+---
+
+#### 1.3b — Video-Call Layout + TTS Voice ✅ Done (2026-06-08)
+
+Redesigned `/amadeus` to feel like an actual video call, not a chat window.
+
+- **Layout** — `75 %` of viewport height is the video feed panel (avatar centred, full-width); `25 %` is a compact chat strip at the bottom
+- **HUD overlays** — corner brackets, status bar (`● LIVE`), bottom strip (`VIKTOR CHONDRIA UNIV. · LAT 35.6°`)
+- **Web Speech API TTS** — every completed Amadeus response is spoken aloud using the browser's best female voice (rate 0.92, pitch 1.15). `▶ VOICE ON/OFF` toggle in chat header
+- **Speaking animations** — purple glow pulses around the avatar, animated sound bars + `SPEAKING` label appear below the name plate while TTS plays
+- **PNG avatar** — replaced CSS geometric avatar with `/public/kurisu.png` (user-provided, AI-generated — no official art). Scan line sweeps over the image; vignette darkens edges; purple `drop-shadow` glow; speaking glow ring pulses when TTS is active
+- **Fresh sessions** — each page load starts with an empty chat (no `localStorage` pre-fill); history persistence will be wired to Supabase in Step 1.4
+
+---
+
+#### 1.3c — 3D Talking Avatar (React Three Fiber + VRM) ⬜ Next
+
+Replace the static PNG with a real-time 3D character that moves when Amadeus speaks.
+
+**Plan:**
+- Add `three`, `@react-three/fiber`, `@react-three/drei`, `@pixiv/three-vrm` to the stack (update AGENTS.md table)
+- Source a CC-licensed VRM model from VRoid Hub (anime-style, lab-coat aesthetic, no official character)
+- Build `components/AmadeusViewer.tsx` — loads VRM, idle head-bob + blink loop, mouth morph targets driven by `isSpeaking` state
+- Swap `<KurisuAvatar>` for `<AmadeusViewer>` in `app/amadeus/page.tsx`
+
+---
+
+#### 1.4 — Supabase Auth + Message Storage ⬜ After 1.3c
 
 Hook up real logins so conversation history persists in the database.
 
