@@ -40,7 +40,7 @@ process.stdin.on("end", () => {
         `  - Example: feat: add Amadeus streaming chat route and Kurisu system prompt`,
         ``,
         `After committing, give 1-2 brief recommendations for what to tackle next`,
-        `based on the current phase in CLAUDE.md.`,
+        `based on the current phase in AGENTS.md.`,
       ].join("\n"),
     };
 

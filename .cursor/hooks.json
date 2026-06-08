@@ -7,6 +7,20 @@
         "timeout": 15,
         "loop_limit": 1
       }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "node .cursor/hooks/secret-leak-guard.js",
+        "matcher": "UserPromptSubmit",
+        "timeout": 5
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "node .cursor/hooks/dangerous-shell-guard.js",
+        "timeout": 5,
+        "failClosed": false
+      }
     ]
   }
 }
