@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Cursor IDE internals — not app code
+    ".cursor/**",
   ]),
 ]);
 

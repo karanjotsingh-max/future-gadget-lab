@@ -197,18 +197,20 @@ export default function AmadeusPage() {
       content: "",
     };
 
-    setMessages((prev) => {
-      const next = [...prev, userMsg, assistantMsg];
-      saveHistory(next);
-      return next;
-    });
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput("");
     setIsLoading(true);
     setStreamingId(assistantId);
 
-    // Build history to send (exclude the blank assistant placeholder)
+    // Build history to send — exclude blank placeholders and error messages
     const history = [
-      ...messages.map(({ role, content }) => ({ role, content })),
+      ...messages
+        .filter(
+          (m) =>
+            m.content.trim().length > 0 &&
+            !m.content.startsWith("[CONNECTION ERROR")
+        )
+        .map(({ role, content }) => ({ role, content })),
       { role: userMsg.role, content: userMsg.content },
     ];
 
@@ -240,9 +242,14 @@ export default function AmadeusPage() {
         );
       }
 
-      // Persist final history
+      // Persist only clean messages (no blank placeholders or errors)
       setMessages((prev) => {
-        saveHistory(prev);
+        const clean = prev.filter(
+          (m) =>
+            m.content.trim().length > 0 &&
+            !m.content.startsWith("[CONNECTION ERROR")
+        );
+        saveHistory(clean);
         return prev;
       });
     } catch (err) {
