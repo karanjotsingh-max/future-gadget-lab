@@ -102,104 +102,54 @@ function KurisuAvatar({
   const online = status === "online";
 
   return (
-    <div className="relative flex h-72 w-72 items-center justify-center sm:h-80 sm:w-80">
-      {/* Slow outer pulse */}
-      <motion.div
-        className="absolute inset-0 rounded-full border border-(--color-amadeus-purple)/20"
-        animate={online ? { scale: [1, 1.07, 1], opacity: [0.25, 0.55, 0.25] } : { opacity: 0.08 }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      {/* Slow CW ring */}
-      <motion.div
-        className="absolute inset-6 rounded-full border border-(--color-amadeus-purple)/15"
-        animate={online ? { rotate: 360 } : { opacity: 0.05 }}
-        transition={online ? { duration: 28, repeat: Infinity, ease: "linear" } : {}}
-      />
-      {/* Fast CCW ring */}
-      <motion.div
-        className="absolute inset-12 rounded-full border border-(--color-amadeus-purple)/10"
-        animate={online ? { rotate: -360 } : { opacity: 0.05 }}
-        transition={online ? { duration: 14, repeat: Infinity, ease: "linear" } : {}}
-      />
-
-      {/* Speaking ring */}
+    <div className="relative flex items-center justify-center" style={{ width: "320px", height: "420px" }}>
+      {/* Speaking glow ring behind the image */}
       <AnimatePresence>
         {isSpeaking && (
           <motion.div
-            key="spk"
-            className="absolute inset-3 rounded-full border-2 border-(--color-amadeus-purple)/55"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: [1, 1.09, 1], opacity: [0.55, 0.15, 0.55] }}
+            key="spk-glow"
+            className="absolute inset-0 rounded-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.4, 0.1, 0.4] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.75, repeat: Infinity }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+            style={{ boxShadow: "0 0 40px 12px rgba(123,47,190,0.45)" }}
           />
         )}
       </AnimatePresence>
 
-      {/* Silhouette */}
-      <motion.div
-        className="relative z-10 flex flex-col items-center"
-        animate={online ? { opacity: 1, y: 0 } : { opacity: 0.2, y: 6 }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* Hair */}
-        <div
-          className="h-7 w-24 rounded-t-[80%]"
-          style={{
-            background: "linear-gradient(180deg,rgba(123,47,190,.55) 0%,rgba(123,47,190,.15) 100%)",
-            border: "1px solid rgba(123,47,190,.65)",
-            borderBottom: "none",
-          }}
-        />
-        {/* Head */}
-        <div
-          className="relative h-28 w-20"
-          style={{
-            background:
-              "radial-gradient(ellipse at 42% 35%,rgba(123,47,190,.42) 0%,rgba(123,47,190,.1) 65%,transparent 100%)",
-            border: "1px solid rgba(123,47,190,.7)",
-            borderTop: "none",
-            borderRadius: "0 0 48% 48%",
-            boxShadow: "0 0 28px rgba(123,47,190,.38),inset 0 0 18px rgba(123,47,190,.12)",
-          }}
-        >
-          {/* Eyes */}
-          <div className="absolute top-8 left-3 h-2 w-3 rounded-full bg-(--color-amadeus-purple)/85" />
-          <div className="absolute top-8 right-3 h-2 w-3 rounded-full bg-(--color-amadeus-purple)/85" />
-          {/* Nose hint */}
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-(--color-amadeus-purple)/40" />
-          {/* Mouth */}
-          <motion.div
-            className="absolute bottom-7 left-1/2 -translate-x-1/2 rounded-full bg-(--color-amadeus-purple)/65"
-            animate={
-              isSpeaking
-                ? { width: ["6px","11px","4px","9px","6px"], height: ["2px","5px","2px","4px","2px"] }
-                : { width: "7px", height: "2px" }
-            }
-            transition={isSpeaking ? { duration: 0.38, repeat: Infinity } : { duration: 0.2 }}
-          />
-        </div>
-        {/* Shoulders */}
-        <div
-          className="h-12 w-40 rounded-b-[60%]"
-          style={{
-            background: "linear-gradient(180deg,rgba(123,47,190,.28) 0%,rgba(123,47,190,.04) 100%)",
-            border: "1px solid rgba(123,47,190,.42)",
-            borderTop: "none",
-            boxShadow: "0 8px 22px rgba(123,47,190,.18)",
-          }}
-        />
-      </motion.div>
+      {/* Actual Kurisu image */}
+      <motion.img
+        src="/kurisu.png"
+        alt="Kurisu Makise — Amadeus"
+        className="relative z-10 h-full w-full object-contain"
+        animate={online ? { opacity: 1 } : { opacity: 0.25 }}
+        transition={{ duration: 0.8 }}
+        style={{
+          filter: online
+            ? "drop-shadow(0 0 18px rgba(123,47,190,0.5))"
+            : "drop-shadow(0 0 6px rgba(123,47,190,0.2)) grayscale(0.6)",
+        }}
+      />
 
-      {/* Scan line */}
+      {/* Scan line overlay */}
       {online && (
         <motion.div
-          className="pointer-events-none absolute inset-x-8 h-px bg-(--color-amadeus-purple)/25"
-          animate={{ top: ["12%","88%","12%"] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute inset-x-0 z-20 h-px bg-(--color-amadeus-purple)/30"
+          animate={{ top: ["5%", "95%", "5%"] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
           style={{ position: "absolute" }}
         />
       )}
+
+      {/* CRT vignette overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 z-20 rounded-lg"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(10,10,15,0.55) 100%)",
+        }}
+      />
     </div>
   );
 }
