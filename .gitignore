@@ -58,6 +58,9 @@ supabase/.temp
 # Place CRS_J*.png files (renamed) here: public/sprites/
 # Run: node scripts/rename-sprites.mjs <path-to-downloaded-drive-folder>
 public/sprites/*.png
+public/sprites/*.gif
+public/sprites/*.wav
+public/sprites/_nul
 
 # ─── Personal tracking files (not for public repo) ─
 build-tracking-doc.ps1
