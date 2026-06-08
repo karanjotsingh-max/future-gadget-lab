@@ -17,7 +17,12 @@ import {
   AMADEUS_SYSTEM_PROMPT,
   ChatRequestSchema,
   AMADEUS_PROMPT_VERSION,
+  CANONICAL_EMOTIONS,
 } from "@/lib/prompts/amadeus";
+
+// Emotion tag regex — matches "[Emotion]\n" at the very start of the response.
+const EMOTION_TAG_RE = /^\[([A-Za-z ]+)\]\r?\n?/;
+const VALID_EMOTIONS = new Set<string>(CANONICAL_EMOTIONS);
 
 // ─────────────────────────────────────────────────────────────
 // In-memory rate limiter (dev only — resets on cold start)
@@ -80,7 +85,7 @@ export async function POST(req: NextRequest) {
 
   // Stream Kurisu's response
   try {
-    const stream = await groq.chat.completions.create({
+    const groqStream = await groq.chat.completions.create({
       model: GROQ_MODEL,
       messages: [
         { role: "system", content: AMADEUS_SYSTEM_PROMPT },
@@ -91,26 +96,50 @@ export async function POST(req: NextRequest) {
       max_tokens: 600,
     });
 
-    // Convert Groq's async iterable into a native ReadableStream
+    // ── Phase 1: buffer first chunks until [Emotion] tag is found ────────────
+    // We use the iterator directly (not for…of) so that a while-loop break does
+    // NOT call iterator.return(), keeping the Groq HTTP connection alive.
+    const iter = groqStream[Symbol.asyncIterator]();
+    let bufferedText = "";
+    let emotion = "Default";
+    let iterDone = false;
+
+    while (bufferedText.length < 80) {
+      const result = await iter.next();
+      if (result.done) { iterDone = true; break; }
+      bufferedText += result.value.choices[0]?.delta?.content ?? "";
+
+      const match = EMOTION_TAG_RE.exec(bufferedText);
+      if (match) {
+        const candidate = match[1];
+        emotion = VALID_EMOTIONS.has(candidate) ? candidate : "Default";
+        bufferedText = bufferedText.slice(match[0].length);
+        break; // while-loop break — does NOT close the iterator
+      }
+    }
+
+    // ── Phase 2: stream remaining text (buffered tail + rest of iterator) ────
+    const textAfterTag = bufferedText;
     const readable = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          for await (const chunk of stream) {
-            const delta = chunk.choices[0]?.delta?.content;
-            if (delta) {
-              controller.enqueue(encoder.encode(delta));
+          if (textAfterTag) controller.enqueue(encoder.encode(textAfterTag));
+          if (!iterDone) {
+            // Resume the iterator from where we left off.
+            while (true) {
+              const result = await iter.next();
+              if (result.done) break;
+              const delta = result.value.choices[0]?.delta?.content;
+              if (delta) controller.enqueue(encoder.encode(delta));
             }
           }
         } catch (err) {
-          // Log server-side; send a generic error token to the client
           console.error(
             `[amadeus/chat] stream error (prompt v${AMADEUS_PROMPT_VERSION}):`,
             err
           );
-          controller.enqueue(
-            encoder.encode("\n\n[TRANSMISSION INTERRUPTED]")
-          );
+          controller.enqueue(encoder.encode("\n\n[TRANSMISSION INTERRUPTED]"));
         } finally {
           controller.close();
         }
@@ -122,6 +151,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
         "X-Amadeus-Prompt-Version": AMADEUS_PROMPT_VERSION,
+        "X-Amadeus-Emotion": emotion,
       },
     });
   } catch (err) {

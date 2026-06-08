@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ChatMessage } from "@/lib/prompts/amadeus";
+import type { ChatMessage, AmadeusEmotion } from "@/lib/prompts/amadeus";
 
 // Dynamically imported with ssr:false — Three.js/WebGL is browser-only.
 // The fallback renders nothing while the JS bundle loads.
@@ -138,6 +138,7 @@ export default function AmadeusPage() {
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [emotion, setEmotion] = useState<AmadeusEmotion>("Default");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -177,6 +178,7 @@ export default function AmadeusPage() {
     setInput("");
     setIsLoading(true);
     setStreamingId(assistantId);
+    setEmotion("Default");
     window.speechSynthesis?.cancel();
     setIsSpeaking(false);
 
@@ -195,6 +197,10 @@ export default function AmadeusPage() {
       });
 
       if (!res.ok || !res.body) throw new Error(await res.text().catch(() => "Unknown error"));
+
+      // Read emotion from header before consuming the stream body.
+      const rawEmotion = res.headers.get("X-Amadeus-Emotion");
+      if (rawEmotion) setEmotion(rawEmotion as AmadeusEmotion);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -298,7 +304,7 @@ export default function AmadeusPage() {
         </div>
 
         {/* 3D Avatar */}
-        <AmadeusAvatar isOnline={status === "online"} isSpeaking={isSpeaking} />
+        <AmadeusAvatar isOnline={status === "online"} isSpeaking={isSpeaking} emotion={emotion} />
 
         {/* Name plate */}
         <AnimatePresence mode="wait">
