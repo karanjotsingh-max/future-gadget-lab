@@ -39,8 +39,22 @@ After each subtask, before moving on:
 
 ## Current Phase Reference
 
-Always check `CLAUDE.md` for the current phase and remaining todos before starting.
+Always check `AGENTS.md` for the current phase and remaining todos before starting.
 The phase order: Amadeus (Phase 1) → D-Mail (Phase 2) → Lab Radio (Phase 3).
+
+## PR Checklist (before opening any pull request)
+
+- [ ] Branch rebased on `main`
+- [ ] `npx tsc --noEmit` passes — 0 errors, no `any`
+- [ ] `npm run lint` passes
+- [ ] No secrets committed (`.env.local` is gitignored)
+- [ ] No inline LLM prompts — all in `lib/prompts/`
+- [ ] No client-side calls to Groq or Supabase `service_role`
+- [ ] No hex colors in JSX — tokens from `constants/theme.ts` only
+- [ ] Canon spellings correct (Reading Steiner · El Psy Kongroo · world line · Hououin Kyouma · D-Mail)
+- [ ] Zod validates any new structured LLM output
+- [ ] Supabase migrations are forward-only (new file, never edit old)
+- [ ] PR title format: `[Phase N] feature: short description`
 
 ## Commit Format (from AGENTS.md)
 
@@ -60,6 +74,6 @@ After each completed subtask, give exactly 2 recommendations:
 
 ```
 Recommendations:
-1. [Most logical next step based on CLAUDE.md current phase]
+1. [Most logical next step based on AGENTS.md current phase]
 2. [Optional improvement or thing to watch out for]
 ```
