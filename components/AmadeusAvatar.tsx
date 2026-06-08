@@ -1,110 +1,78 @@
 "use client";
 
 /**
- * AmadeusAvatar — React Three Fiber canvas with a VRM 3D model.
+ * AmadeusAvatar — React Three Fiber canvas with kurisu.png as a 3D plane.
  *
- * Model: VRM1_Constraint_Twist_Sample.vrm (CC BY 4.0, Pixiv/three-vrm)
- * Animations driven by isSpeaking / isOnline props:
- *   - Mouth: "aa" expression oscillates while speaking
- *   - Eyes:  periodic blink in idle (every 4-6 s)
- *   - Spring bones + look-at updated every frame via vrm.update(delta)
+ * Technique: "paper cutout" — the PNG is loaded as a Three.js texture and
+ * mapped onto a flat plane. useFrame drives idle float + speaking animations
+ * (scale pulse, head sway) to make the still image feel alive.
+ *
+ * Upgrade path: when a proper Kurisu .vrm is available, replace PNGScene
+ * with the VRMScene implementation (see git history) and swap the camera.
  *
  * Dynamically imported with ssr:false in amadeus/page.tsx because
  * Three.js / WebGL only exist in the browser.
  */
 
-import { Suspense, useEffect, useRef } from "react";
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { VRMLoaderPlugin, type VRM } from "@pixiv/three-vrm";
+import { Suspense, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useTexture } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
+import * as THREE from "three";
 
-// ── Camera helper ──────────────────────────────────────────────────
-// Runs inside Canvas; aims the default camera at head height once.
-// Model is NOT offset — head is at world y ≈ 1.4 (natural VRM height).
-function CameraLookAt() {
-  const { camera } = useThree();
-  useEffect(() => {
-    camera.lookAt(0, 1.4, 0);
-  }, [camera]);
-  return null;
-}
-
-// ── VRM scene ──────────────────────────────────────────────────────
+// ── 3D PNG scene ───────────────────────────────────────────────────
 type SceneProps = { isSpeaking: boolean };
 
-function VRMScene({ isSpeaking }: SceneProps) {
-  // useLoader suspends until the file is loaded; R3F caches by URL.
-  const gltf = useLoader(GLTFLoader, "/kurisu.vrm", (loader) => {
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-  });
+function PNGScene({ isSpeaking }: SceneProps) {
+  // useTexture suspends until the PNG is loaded; R3F/drei cache it.
+  const texture = useTexture("/kurisu.png");
 
-  const vrm = gltf.userData.vrm as VRM | undefined;
+  const meshRef = useRef<THREE.Mesh>(null);
 
-  // Blink state — all in refs so they don't cause re-renders.
-  const blinkTimer = useRef(0);
-  const nextBlink = useRef(4); // randomised after mount in useEffect below
-  const isBlinking = useRef(false);
-  const blinkProgress = useRef(0);
-
-  useEffect(() => {
-    // Randomise the first blink interval client-side (avoids impure render call).
-    nextBlink.current = 3.5 + Math.random() * 2.5;
-  }, []);
-
-  useEffect(() => {
-    if (!vrm) return;
-    // Keep model at y=0 (feet on floor). Camera aimed at y=1.4 (head height).
-    vrm.scene.position.set(0, 0, 0);
-  }, [vrm]);
-
-  // useFrame receives (state, delta) — delta is seconds since last frame.
   useFrame((state, delta) => {
-    if (!vrm) return;
+    const mesh = meshRef.current;
+    if (!mesh) return;
 
-    const em = vrm.expressionManager;
-    if (em) {
-      // ── Mouth ──────────────────────────────────────────────────
-      if (isSpeaking) {
-        // Sinusoidal open/close at ~5 Hz to mimic talking.
-        const mouthOpen = (Math.sin(state.clock.elapsedTime * 32) * 0.5 + 0.5) * 0.75;
-        em.setValue("aa", mouthOpen);
-      } else {
-        em.setValue("aa", 0);
-      }
+    const t = state.clock.elapsedTime;
 
-      // ── Blink ──────────────────────────────────────────────────
-      blinkTimer.current += delta;
+    // Idle animation — gentle vertical float + very subtle side sway.
+    const idleY = Math.sin(t * 0.6) * 0.025;
+    const idleZ = Math.sin(t * 0.4) * 0.005;
 
-      if (!isBlinking.current && blinkTimer.current >= nextBlink.current) {
-        isBlinking.current = true;
-        blinkProgress.current = 0;
-      }
-
-      if (isBlinking.current) {
-        blinkProgress.current += delta;
-        const BLINK_DURATION = 0.18; // seconds for a full blink cycle
-        const t = blinkProgress.current / BLINK_DURATION;
-        // t: 0→1 closes eye, 1→2 opens eye
-        em.setValue("blink", t < 1 ? t : Math.max(0, 2 - t));
-
-        if (blinkProgress.current >= BLINK_DURATION) {
-          em.setValue("blink", 0);
-          isBlinking.current = false;
-          blinkTimer.current = 0;
-          nextBlink.current = 3.5 + Math.random() * 2.5;
-        }
-      }
+    if (isSpeaking) {
+      // Speaking — faster head micro-sway + slight scale pulse on Y.
+      mesh.position.y = idleY + Math.sin(t * 14) * 0.008;
+      mesh.rotation.z = idleZ + Math.sin(t * 11) * 0.012;
+      mesh.scale.y = 1 + Math.sin(t * 18) * 0.006;
+      mesh.scale.x = 1 - Math.sin(t * 18) * 0.003; // subtle squeeze
+    } else {
+      mesh.position.y += (idleY - mesh.position.y) * Math.min(delta * 4, 1);
+      mesh.rotation.z += (idleZ - mesh.rotation.z) * Math.min(delta * 3, 1);
+      mesh.scale.y += (1 - mesh.scale.y) * Math.min(delta * 6, 1);
+      mesh.scale.x += (1 - mesh.scale.x) * Math.min(delta * 6, 1);
     }
-
-    // Spring bones, look-at, constraints — must be called every frame.
-    vrm.update(delta);
   });
 
-  if (!vrm) return null;
+  // Size the plane to match the PNG's aspect ratio.
+  // kurisu.png is portrait; we fill most of the 320×420 canvas.
+  const planeH = 2.8;
+  const planeW = planeH * 0.72; // approximate portrait aspect
 
-  // <primitive> inserts any Three.js Object3D directly into the R3F scene.
-  return <primitive object={vrm.scene} dispose={null} />;
+  return (
+    <mesh ref={meshRef}>
+      <planeGeometry args={[planeW, planeH]} />
+      {/*
+       * meshBasicMaterial — unlit, so the PNG colours show exactly as-is.
+       * transparent + alphaTest cuts out the PNG background.
+       */}
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        alphaTest={0.1}
+        side={THREE.FrontSide}
+      />
+    </mesh>
+  );
 }
 
 // ── Exported component ─────────────────────────────────────────────
@@ -113,22 +81,6 @@ type Props = { isSpeaking: boolean; isOnline: boolean };
 export function AmadeusAvatar({ isSpeaking, isOnline }: Props) {
   return (
     <div className="relative" style={{ width: "320px", height: "420px" }}>
-      {/* PNG fallback — visible behind the canvas while VRM is loading
-          or if no VRM model is present yet. Canvas is transparent so
-          once the VRM loads it renders on top of this image. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/kurisu.png"
-        alt=""
-        aria-hidden
-        className="absolute inset-0 h-full w-full object-contain"
-        style={{
-          filter: isOnline
-            ? "drop-shadow(0 0 14px rgba(123,47,190,0.4))"
-            : "grayscale(0.7) opacity(0.25)",
-        }}
-      />
-
       {/* Speaking glow ring */}
       <AnimatePresence>
         {isSpeaking && (
@@ -145,12 +97,13 @@ export function AmadeusAvatar({ isSpeaking, isOnline }: Props) {
       </AnimatePresence>
 
       {/*
-       * gl={{ alpha: true }} → transparent canvas so the PNG fallback
-       * behind shows through until the VRM finishes loading.
+       * Camera sits at z=2 looking at the origin. The PNG plane is centred
+       * there, so no lookAt override is needed.
+       * gl.alpha:true lets the dark CRT panel show around the plane edges.
        */}
       <Canvas
         gl={{ alpha: true, antialias: true }}
-        camera={{ position: [0, 1.6, 1.0], fov: 35 }}
+        camera={{ position: [0, 0, 2], fov: 60 }}
         style={{
           filter: isOnline
             ? "drop-shadow(0 0 18px rgba(123,47,190,0.5))"
@@ -159,18 +112,12 @@ export function AmadeusAvatar({ isSpeaking, isOnline }: Props) {
           transition: "opacity 0.8s",
         }}
       >
-        <CameraLookAt />
-        {/* Soft blue-white key light + subtle purple fill from below */}
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[1, 2, 2]} intensity={1.0} color="#b8c5ff" />
-        <directionalLight position={[-1, 0, 1]} intensity={0.3} color="#7b2fbe" />
-
         <Suspense fallback={null}>
-          <VRMScene isSpeaking={isSpeaking} />
+          <PNGScene isSpeaking={isSpeaking} />
         </Suspense>
       </Canvas>
 
-      {/* CRT vignette overlay (matching the rest of the UI) */}
+      {/* CRT vignette overlay */}
       <div
         className="pointer-events-none absolute inset-0 z-20 rounded-lg"
         style={{
