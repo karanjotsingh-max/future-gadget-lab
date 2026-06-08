@@ -60,8 +60,8 @@ const MAP = [
   ["E_400005",  "surprise"],
   ["E_400006",  "not-interest"],
   ["E_400007",  "closed-sleep"],
-  // F series (Back — no mouth variants expected)
-  ["F_000000",  "back"],
+  // F series — Back only has a single file: CRS_JLF_00000001.png
+  // Handled as a special case after the loop.
 ];
 
 let copied = 0;
@@ -91,6 +91,17 @@ for (const [variant, slug] of MAP) {
     copied++;
   }
   // Missing open variant is fine — code falls back to body-sway for that emotion
+}
+
+// Back sprite — only mouth-01 variant exists in the pack
+const backSrc = path.join(srcDir, "CRS_JLF_00000001.png");
+if (fs.existsSync(backSrc)) {
+  fs.copyFileSync(backSrc, path.join(destDir, "kurisu-back.png"));
+  console.log("  copied  CRS_JLF_00000001.png → kurisu-back.png");
+  copied++;
+} else {
+  console.warn("  MISSING CRS_JLF_00000001.png  (slug: back)");
+  skipped++;
 }
 
 console.log(`\nDone. ${copied} files copied, ${skipped} base sprites missing.`);
