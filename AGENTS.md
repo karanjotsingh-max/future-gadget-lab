@@ -36,8 +36,9 @@
 | 1.3a | Prompt v1.1.0 — authentic Kurisu voice, speech patterns, @channel secret | Done |
 | 1.3b | Video-call layout (75 % video / 25 % chat), Web Speech API TTS, PNG avatar | Done |
 | 1.3c | 3D talking avatar — React Three Fiber + PNG paper-cutout (idle float + speaking sway) | Done |
-| 1.3d | Emotion-driven avatar — LLM outputs `[Emotion]` tag; frontend swaps expression | **Next** |
-| 1.4 | Supabase auth + messages table | After 1.3d |
+| 1.3d | Emotion-driven avatar — LLM outputs `[Emotion]` tag; frontend swaps expression | Done |
+| 1.3g | Full sprite usage — frontend-driven emotions for all UI/system events | **Next** |
+| 1.4 | Supabase auth + messages table | After 1.3g |
 | 1.5 | Vercel deploy + LinkedIn post #1 | After 1.4 |
 
 Phase order: 1 Amadeus → 2 D-Mail + RAG → 3 Lab Radio + Lab Notes.

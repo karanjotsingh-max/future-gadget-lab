@@ -9,7 +9,7 @@
 
 **Phase 1 — Amadeus chatbot**
 **Last completed step: 1.3f** — Remove VRM artifacts, unused deps, and default Next.js assets
-**Next step: 1.4** — Supabase auth + messages table
+**Next step: 1.3g** — Full sprite usage (frontend-driven emotions for all UI/system events)
 
 ---
 
@@ -67,6 +67,31 @@ Known hard ceiling: `Calm` vs `Tired` on same topic needs conversation history. 
 - **isSpeaking**: Set on `audio.play()` start, cleared on `audio.onended` — accurately tracks actual playback (not fetch start).
 - **Voice toggle**: `stopAudio()` pauses current audio and revokes blob URL. No memory leaks.
 - **History**: `localStorage` (key `amadeus_history_v1`, last 40 messages). Supabase persistence wired in step 1.4.
+- **Emotion source**: Currently LLM-only via `X-Amadeus-Emotion` header. Step 1.3g adds frontend-driven emotion for system events (see below).
+
+## Full Sprite Usage Plan (Step 1.3g)
+
+All 20 sprites must be reachable. Two emotion sources feed the same `setEmotion()` call:
+1. **LLM** — `X-Amadeus-Emotion` header (existing)
+2. **Frontend** — direct `setEmotion()` for UI/system events (new)
+
+| Trigger | Sprite | Where |
+|---|---|---|
+| Request starts (loading) | `Calm` | `sendMessage()` — before fetch |
+| LLM reply arrives | LLM-chosen emotion | `X-Amadeus-Emotion` header (existing) |
+| API error / network fail | `Closed Sleep` | `catch` block in `sendMessage()` |
+| Rate limit (429) | `Tired` | check `res.status === 429` before throw |
+| Page load / connection established | `Wink` | `status` transitions to `"online"` |
+| Idle 3 min (no typing) | `Tired` | `setTimeout` reset on every keystroke |
+| Idle 8 min | `Sleep` | second `setTimeout` |
+| User types after sleeping | `Surprise` | clear idle timers, `setEmotion("Surprise")` |
+| Clear history / end session | `Back` | `clearHistory()` |
+
+Implementation notes:
+- Idle timers: two `useRef<ReturnType<typeof setTimeout>>` — reset in `handleKeyDown` and `sendMessage`. Clear in cleanup `useEffect`.
+- `Surprise` should last ~2s then revert to `Default` before the LLM reply lands.
+- `Wink` on connect should last ~1.5s then fade to `Default`.
+- `Back` on clear history should last ~2s then fade to `Default`.
 
 ## Sprite Setup
 
