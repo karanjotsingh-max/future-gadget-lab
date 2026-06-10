@@ -29,8 +29,7 @@
  */
 
 import { Suspense, useRef, useEffect } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import type { AmadeusEmotion } from "@/lib/prompts/amadeus";
@@ -113,7 +112,7 @@ type SceneProps = { isSpeaking: boolean; emotion: AmadeusEmotion };
 
 function PNGScene({ isSpeaking, emotion }: SceneProps) {
   // Fallback texture — always loaded via Suspense; used when sprite is missing.
-  const fallback = useTexture("/kurisu.png");
+  const fallback = useLoader(THREE.TextureLoader, "/kurisu.png");
 
   const meshRef  = useRef<THREE.Mesh>(null);
   // Refs (not state) so texture swaps happen inside useFrame without re-renders.
