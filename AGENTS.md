@@ -31,7 +31,7 @@
 | Step | Task | Status |
 |---|---|---|
 | 1.1 | Scaffold + theme + landing | Done |
-| 1.2 | Groq client, Amadeus API + prompt | Done |
+| 1.2 | LLM client, Amadeus API + prompt | Done |
 | 1.3 | Amadeus video-call UI + Supabase clients | Done |
 | 1.3a | Prompt v1.1.0 — authentic Kurisu voice, speech patterns, @channel secret | Done |
 | 1.3b | Video-call layout (75 % video / 25 % chat), Web Speech API TTS, PNG avatar | Done |
@@ -48,15 +48,15 @@ Complete the current phase before starting the next. Each phase ends with a depl
 
 - Amadeus before D-Mail — more visually striking for LinkedIn post #1
 - No RAG in Phase 1 — Steins;Gate lore baked into system prompt; pgvector RAG in Phase 2
-- Avatar: `components/AmadeusAvatar.tsx` — R3F Canvas, `kurisu.png` as a 3D plane (paper-cutout technique). Idle float + speaking micro-sway driven by `isSpeaking`. Upgrade path: swap for a proper VRoid `.vrm` — Canvas code stays the same.
-- Emotion system (step 1.3d, inspired by [CodeDroidX/Amadeus on Habr](https://habr.com/en/articles/799017/)): Kurisu prepends `[Emotion]` to every reply. API route strips the tag and sends it as a separate SSE field. Frontend maps emotion → avatar animation variant. **No VN sprites** — use AI-generated expression images or per-emotion Three.js animations only.
-- TTS: Web Speech API (browser-native) for Phase 1. Future upgrade: [`mio/amadeus`](https://huggingface.co/mio/amadeus) ESPnet model (trained on Kurisu's Japanese VA) via a Python sidecar — Phase 2.
+- Avatar: `components/AmadeusAvatar.tsx` — R3F Canvas, PNG sprite as a 3D plane (paper-cutout technique). Idle float + speaking micro-sway driven by `isSpeaking`. 20 emotion-specific sprites from the original VN (CRS_JL pack); closed + open-mouth variants per emotion.
+- Emotion system (step 1.3d, inspired by [CodeDroidX/Amadeus on Habr](https://habr.com/en/articles/799017/)): Kurisu prepends `[Emotion]` to every reply. API route strips the tag and sends it as `X-Amadeus-Emotion` header before streaming clean text. Frontend maps emotion → sprite swap + body animation variant. Step 1.3g adds frontend-driven emotions for UI/system events (loading, error, idle, etc.).
+- TTS: Edge TTS (`edge-tts-universal`, server-side, en-US-JennyNeural) for Phase 1. Future upgrade: `Loke-60000/christina-TTS` (Qwen3-TTS fine-tuned on Kurisu's English voice) via Python sidecar — Phase 2.
 - Streaming prose for Amadeus; structured JSON + Zod for D-Mail
 - Guest-first — full functionality without login; `localStorage` now, Supabase on sign-up
 
 ## Security (non-negotiable)
 
-1. API keys are SERVER-ONLY. Groq + Supabase `service_role` only in `process.env` inside `app/api/**`.
+1. API keys are SERVER-ONLY. Gemini + Supabase `service_role` only in `process.env` inside `app/api/**`.
 2. `NEXT_PUBLIC_` prefix only for `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 3. All LLM calls go through `app/api/**` route handlers — never from client components.
 4. Rate-limit every API route by IP. In-memory limiters are forbidden in production (reset on cold start).
@@ -147,7 +147,7 @@ Reading Steiner · El Psy Kongroo · world line (two words, lowercase) · Hououi
 ## Anti-Patterns (will reject in review)
 
 - Inline LLM prompts anywhere outside `lib/prompts/`
-- Client-side fetch to Groq or Supabase `service_role`
+- Client-side fetch to Gemini or Supabase `service_role`
 - Hardcoded colors / fonts / spacing in JSX
 - `any` types
 - `useEffect` for data fetching

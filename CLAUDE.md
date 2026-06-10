@@ -146,7 +146,7 @@ supabase/migrations/        ← (empty — first migration in step 1.4)
 ## Key env vars
 
 ```
-GROQ_API_KEY=                         # set in .env.local
+GEMINI_API_KEY=                       # set in .env.local — Google AI Studio
 NEXT_PUBLIC_SUPABASE_URL=             # needed for 1.4
 NEXT_PUBLIC_SUPABASE_ANON_KEY=        # needed for 1.4
 SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_PUBLIC_)
@@ -160,14 +160,14 @@ SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_
 - Dev server on port 3000 with Turbopack (`npm run dev`).
 - `THREE.Clock` deprecation warning in browser console — from R3F internals, harmless.
 - `alphaTest={0.1}` on `meshBasicMaterial` cuts out semi-transparent pixels. VN sprites have transparent backgrounds — works correctly.
-- Groq free tier: 100k TPD. Running `test-emotions.mjs` (20 requests) burns ~1,500 tokens — run sparingly.
+- Gemini free tier: 1M TPD / 1,500 RPD. Running `test-emotions.mjs` (20 requests) burns ~1,500 tokens — negligible, but run on demand not in a loop.
 - **Do not use `Invoke-WebRequest` to test the API** — it hangs on chunked streaming responses. Use `node -e "fetch(...)"` instead.
 - Edge TTS (`edge-tts-universal`) adds ~1s latency before audio starts (TTS round-trip to Microsoft's servers). `isSpeaking` triggers on playback start, not fetch start — avatar mouth stays accurate.
 - TTS Phase 2 upgrade: `Loke-60000/christina-TTS` (Qwen3-TTS 0.9B fine-tuned on Kurisu's English voice). Requires Python sidecar + CUDA. `/api/amadeus/tts` should proxy to `CHRISTINA_TTS_URL` env var when set, falling back to Edge TTS.
 
 ---
 
-## Step 1.4 Plan (next)
+## Step 1.4 Plan (after 1.3g)
 
 | Sub-task | File(s) |
 |---|---|
