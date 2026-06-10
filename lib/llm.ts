@@ -1,7 +1,9 @@
 /**
- * LLM client — currently backed by Gemini 2.0 Flash via Google AI Studio's
- * OpenAI-compatible endpoint.  The Groq SDK accepts a custom baseURL, so the
- * route handlers don't need to change at all when we swap providers.
+ * LLM client — Gemini 2.0 Flash via Google AI Studio's OpenAI-compatible endpoint.
+ *
+ * We use the `groq-sdk` package (which wraps the OpenAI SDK) pointed at Google's
+ * OpenAI-compat baseURL. This means no new npm package is needed and all route
+ * handlers work unchanged — only this file knows about the provider.
  *
  * Per AGENTS.md §6.2 — routes import this, never call fetch() to the LLM directly.
  * Per AGENTS.md §4.1 — GEMINI_API_KEY is server-only; never put it in NEXT_PUBLIC_*.
@@ -9,7 +11,7 @@
  * This file is imported only from app/api/** route handlers (server-side).
  * Next.js will throw a build error if it is imported from a client component.
  *
- * Free tier: Gemini 2.0 Flash via AI Studio — 1 M TPD (10× Groq free tier).
+ * Free tier: 1 M tokens/day via AI Studio.
  * Docs: https://ai.google.dev/gemini-api/docs/openai
  */
 
@@ -20,27 +22,27 @@ import Groq from "groq-sdk";
  * This lets `next build` succeed even when .env.local is absent (CI, fresh clone).
  * The first actual API call will throw a clear error if the key is missing.
  */
-let _groq: Groq | null = null;
+let _client: Groq | null = null;
 
-export function getGroq(): Groq {
-  if (!_groq) {
+export function getLLMClient(): Groq {
+  if (!_client) {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is not set. Add it to .env.local");
     }
-    _groq = new Groq({
+    _client = new Groq({
       apiKey: process.env.GEMINI_API_KEY,
       baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
     });
   }
-  return _groq;
+  return _client;
 }
 
-/** Convenience re-export — use getGroq() in route handlers */
-export const groq = {
+/** Convenience re-export — use llm.chat.completions.create() in route handlers */
+export const llm = {
   get chat() {
-    return getGroq().chat;
+    return getLLMClient().chat;
   },
 };
 
 /** The model used for all LLM calls. Change here to update everywhere. */
-export const GROQ_MODEL = "gemini-2.0-flash";
+export const LLM_MODEL = "gemini-2.0-flash";

@@ -95,7 +95,7 @@ components/
   WorldLineMeter.tsx        ← Animated divergence meter in the nav
 
 lib/
-  groq.ts                   ← Single Groq client (lazy init); GROQ_MODEL constant here
+  llm.ts                    ← LLM client (lazy init); LLM_MODEL constant here
   prompts/amadeus.ts        ← Prompt v1.4.0 + AMADEUS_FEW_SHOT (10 pairs) + CANONICAL_EMOTIONS + Zod schemas
   supabase/
     server.ts               ← Server-side Supabase client (reads cookies)

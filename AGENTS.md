@@ -83,7 +83,7 @@ app/
   api/d-mail/
 components/        ← reusable UI (PascalCase files)
 lib/
-  groq.ts          ← single Groq client wrapper
+  llm.ts           ← single LLM client wrapper (Gemini via OpenAI-compat)
   supabase/        ← server.ts + client.ts
   prompts/         ← ALL LLM prompts live here
   rag/             ← Phase 2: embedding + retrieval
@@ -95,7 +95,7 @@ supabase/migrations/
 ## AI / LLM Conventions
 
 - All prompts in `lib/prompts/<feature>.ts` as exported constants — never inline
-- One Groq client in `lib/groq.ts` — import this, never `fetch` Groq directly
+- One LLM client in `lib/llm.ts` — import this, never `fetch` the LLM directly
 - Use `response_format: { type: "json_object" }` for structured output; validate with Zod immediately
 - Version prompts with a `PROMPT_VERSION` constant; note changes in commit message
 - RAG: top-k = 4, similarity threshold = 0.75, include retrieved chunks with clear delimiters

@@ -12,7 +12,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { groq, GROQ_MODEL } from "@/lib/groq";
+import { llm, LLM_MODEL } from "@/lib/llm";
 import {
   AMADEUS_SYSTEM_PROMPT,
   AMADEUS_FEW_SHOT,
@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
 
   // Stream Kurisu's response
   try {
-    const groqStream = await groq.chat.completions.create({
-      model: GROQ_MODEL,
+    const groqStream = await llm.chat.completions.create({
+      model: LLM_MODEL,
       messages: [
         { role: "system", content: AMADEUS_SYSTEM_PROMPT },
         ...AMADEUS_FEW_SHOT,
