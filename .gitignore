@@ -67,3 +67,12 @@ build-tracking-doc.ps1
 Steins-Gate-Project-Tracking.docx
 *.docx
 
+# ─── Cursor / AI agent artifacts ─────────────────
+# One-off post/brief docs — personal, not for public repo
+LINKEDIN_POST_BRIEF.md
+# Cursor runtime noise (transcripts, terminal snapshots, MCP cache)
+# Skills and rules inside .cursor/ ARE committed — only runtime dirs ignored
+.cursor/agent-transcripts/
+.cursor/terminals/
+.cursor/mcps/
+
