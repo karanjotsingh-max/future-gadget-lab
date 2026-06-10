@@ -21,7 +21,7 @@
 | 3D Rendering | React Three Fiber (`@react-three/fiber`, `three`) |
 | Auth + DB | Supabase (`@supabase/supabase-js`) |
 | Vector DB | Supabase pgvector |
-| LLM | Gemini 2.0 Flash via Google AI Studio (`groq-sdk` OpenAI-compat endpoint) |
+| LLM | Gemini 3.5 Flash via Google AI Studio (`groq-sdk` OpenAI-compat endpoint) |
 | TTS | Edge TTS (`edge-tts-universal`, server-side, free) |
 | Validation | Zod |
 | Hosting | Vercel |

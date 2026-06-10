@@ -45,4 +45,4 @@ export const llm = {
 };
 
 /** The model used for all LLM calls. Change here to update everywhere. */
-export const LLM_MODEL = "gemini-2.0-flash";
+export const LLM_MODEL = "gemini-3.5-flash";

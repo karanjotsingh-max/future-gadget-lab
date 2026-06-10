@@ -37,7 +37,7 @@
 | Key | Value |
 |---|---|
 | Provider | Google AI Studio (Gemini) — OpenAI-compatible endpoint |
-| Model | `gemini-2.0-flash` |
+| Model | `gemini-3.5-flash` |
 | `max_tokens` | 220 |
 | `temperature` | 0.85 |
 | Free tier limit | 1 M TPD (10× Groq free tier) |
