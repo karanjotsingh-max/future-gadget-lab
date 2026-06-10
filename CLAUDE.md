@@ -8,7 +8,7 @@
 ## Current Position
 
 **Phase 1 — Amadeus chatbot**
-**Last completed step: 1.3e** — Edge TTS + prompt v1.4.0 + avatar pendulum fix
+**Last completed step: 1.3f** — Remove VRM artifacts, unused deps, and default Next.js assets
 **Next step: 1.4** — Supabase auth + messages table
 
 ---
@@ -28,6 +28,7 @@
 | `fix: in-world error message + switch model to qwen3-32b` | Replace `[CONNECTION ERROR: ...]` bubble with `...[ TRANSMISSION INTERRUPTED ]`; API 500 returns plain text |
 | `chore: switch model to llama-4-scout` | qwen3-32b abandoned (slow — thinking mode); switched to `meta-llama/llama-4-scout-17b-16e-instruct` |
 | `feat: step 1.3e -- Edge TTS, prompt v1.4.0, avatar pendulum fix` | Replace Web Speech API with `edge-tts-universal`; new `/api/amadeus/tts` route; prompt v1.4.0 with 10 few-shot pairs; fix Embrassed Z-rotation pendulum → slow X-sway; emotion accuracy 9→14-15/20 |
+| `chore: remove vrm artifacts, unused deps, and default next.js assets` | Uninstall `@pixiv/three-vrm` (14 packages); delete `kurisu.vrm` (10.7 MB), original `CRS_*` sprite sources, junk Drive-pack files, default Next.js SVGs; update `AGENTS.md` stack table |
 
 ---
 
@@ -114,7 +115,6 @@ lib/
 
 public/
   kurisu.png                ← Fallback avatar (used when sprites not found)
-  kurisu.vrm                ← VRM1 placeholder (not used — kept for future upgrade)
   sprites/                  ← Gitignored PNGs; .gitkeep committed
     kurisu-{slug}.png       ← Closed-mouth expression per emotion (20 files)
     kurisu-{slug}-open.png  ← Open-mouth talking variant (19 files)
@@ -143,7 +143,6 @@ SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_
 
 ## Known Issues / Watch-outs
 
-- `public/kurisu.vrm` is 10.7 MB committed to git — add to `.gitignore` if size becomes a problem.
 - Sprites are loaded per-emotion via `THREE.TextureLoader` in `useEffect`. On slow connections there's a brief flash of the fallback `kurisu.png` between emotion changes until the new sprite loads. Can fix with preloading if needed.
 - Dev server on port 3000 with Turbopack (`npm run dev`).
 - `THREE.Clock` deprecation warning in browser console — from R3F internals, harmless.
