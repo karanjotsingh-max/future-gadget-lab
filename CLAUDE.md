@@ -36,29 +36,17 @@
 
 | Key | Value |
 |---|---|
-| Provider | Groq API |
-| Model | `meta-llama/llama-4-scout-17b-16e-instruct` (Llama 4, MoE, fast) |
+| Provider | Google AI Studio (Gemini) — OpenAI-compatible endpoint |
+| Model | `gemini-2.0-flash` |
 | `max_tokens` | 220 |
 | `temperature` | 0.85 |
-| Free tier limit | 100k TPD per model (separate bucket from llama-3.3-70b) |
+| Free tier limit | 1 M TPD (10× Groq free tier) |
 | Prompt version | v1.4.0 |
 | Few-shot pairs | 10 (in `AMADEUS_FEW_SHOT`, injected between system + user messages) |
+| SDK | `groq-sdk` pointed at Gemini baseURL — route handlers unchanged |
 
-**Tested emotion accuracy (automated):** 14-15/20 (70-75%) on `test-emotions.mjs`.
+**Tested emotion accuracy (automated):** 14-15/20 (70-75%) on `test-emotions.mjs` (measured with Llama 4; re-run to confirm with Gemini).
 Known hard ceiling: `Calm` vs `Tired` on same topic needs conversation history. `Very Serious` vs `Serious` near-identical. Remaining misfires acceptable for real usage.
-
-### Gemini migration (future option)
-If Groq limits become a problem: Gemini 2.0 Flash via AI Studio free tier gives **1M TPD** (10×).
-Can be done via the OpenAI-compatible endpoint — no new npm package needed:
-```ts
-// lib/groq.ts — swap to Gemini without changing route code
-new Groq({
-  apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-})
-// GROQ_MODEL = "gemini-2.0-flash"
-```
-Add `GEMINI_API_KEY` to `.env.local` and `.env.example`. Update `AGENTS.md` stack table.
 
 ---
 
