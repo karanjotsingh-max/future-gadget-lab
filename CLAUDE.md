@@ -54,7 +54,7 @@ Known hard ceiling: `Calm` vs `Tired` on same topic needs conversation history. 
 
 - **Sprite system**: `useEffect` loads `kurisu-{slug}.png` + `kurisu-{slug}-open.png` via `THREE.TextureLoader` per emotion. Falls back to `/kurisu.png` on 404.
 - **Mouth toggle**: During `isSpeaking`, alternates base ↔ open texture at 5 Hz (`Math.sin(t * Math.PI * 10) > 0`)
-- **Body animation**: Y-float only. X-shake for `Angry` (fast, 9 Hz). Slow X-sway for `Embrassed`/`Very Embrassed` (1.8/2.5 Hz — nervous shift). No Z rotation on any emotion (flat sprites tilt like a pendulum).
+- **Body animation**: Y-float on all emotions. X-shake for `Angry` (9 Hz). Slow X-sway for `Embrassed`/`Very Embrassed` (1.8/2.5 Hz). `Sad`/`Sleep`/`Tired` have reduced opacity. No Z rotation — flat sprites tilt unnaturally when rotated.
 - **Canvas**: `gl={{ alpha: true }}`, camera at `[0, 0, 3]`, fov 60
 - **Plane**: `3.0 × 1.81` (852/1411 aspect ratio — matches actual CRS_JL sprite dimensions)
 - **Color fix**: `t.colorSpace = THREE.SRGBColorSpace` on all loaded textures

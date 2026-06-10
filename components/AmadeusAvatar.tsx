@@ -23,9 +23,9 @@
  *   sway amplitude, X-shake (Angry), Y offset, Z-rotation offset, and
  *   opacity. All values lerp smoothly in useFrame.
  *
- * Upgrade path:
- *   Drop in a VRoid `.vrm` file + `@pixiv/three-vrm` to switch from
- *   sprites to a full 3D VRM avatar — Canvas/props stay identical.
+ * Upgrade path (Phase 2):
+ *   Replace PNGScene with a VRM scene using `@pixiv/three-vrm` — the
+ *   Canvas + AmadeusAvatar props stay identical; only the inner scene changes.
  */
 
 import { Suspense, useRef, useEffect } from "react";
