@@ -165,7 +165,7 @@ Reading Steiner · El Psy Kongroo · world line (two words, lowercase) · Hououi
 
 ## Collaboration (AI agents)
 
-- Karan is learning — explain every non-obvious decision before writing code
+- The developer is learning — explain every non-obvious decision before writing code
 - Use the correct skill before starting any task (see table below)
 
 | Situation | Skill to use |

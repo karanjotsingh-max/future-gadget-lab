@@ -5,7 +5,7 @@ description: Step-by-step collaborative workflow for the Future Gadget Lab proje
 
 # FGL Step-by-Step Workflow
 
-Karan is a junior developer learning full-stack development while building this project. Work together — one subtask at a time, explain each decision, wait for confirmation before continuing.
+The developer is learning full-stack development while building this project. Work together — one subtask at a time, explain each decision, wait for confirmation before continuing.
 
 ## The Rule
 
