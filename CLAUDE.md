@@ -1,184 +1,105 @@
 # CLAUDE.md — Session State
 
-> Snapshot of where we are right now. Update this file before clearing context.
-> For full build history see [`ROADMAP.md`](./ROADMAP.md). For rules see [`AGENTS.md`](./AGENTS.md).
+> Update this file before clearing context. Rules → [`AGENTS.md`](./AGENTS.md). History → [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
 ## Current Position
 
 **Phase 1 — Amadeus chatbot**
-**Last completed step: 1.3f** — Remove VRM artifacts, unused deps, and default Next.js assets
-**Next step: 1.3g** — Full sprite usage (frontend-driven emotions for all UI/system events)
+**Last completed:** 1.3f — Remove VRM artifacts, unused deps, default Next.js assets
+**Next:** 1.3g — Full sprite usage (frontend-driven emotions for all UI/system events)
 
 ---
 
-## What Was Built (all sessions)
-
-| Commit | What |
-|---|---|
-| `feat: step 1.3d` | Prompt v1.2.0 + API emotion extraction + page emotion state + avatar EMOTION_CONFIGS |
-| `fix: scale up avatar animation amplitudes` | Idle float/sway now visible (was ±4px, now ±13px) |
-| `feat: sprite-swap avatar system + rename script` | AmadeusAvatar loads emotion-specific PNGs; 5Hz mouth toggle during TTS |
-| `fix: handle CRS_JLF Back sprite naming` | scripts/rename-sprites.mjs correctly maps Back sprite |
-| `fix: correct sprite cropping, remove pendulum rotation, fix CRT scanline overlap and sRGB colors` | Camera z=3, correct aspect ratio (852×1411), z-rotation removed, SRGBColorSpace on textures, zIndex:10 lifts avatar above `.crt-frame::after` |
-| `chore: ignore non-sprite files in public/sprites` | .gitignore updated for .gif/.wav/_nul from Drive pack |
-| `refactor: prompt v1.3.0` | Slim system prompt (~50% shorter); replace speech-pattern rules with 6 few-shot pairs; fix character: Amadeus (SG0 AI) not real Kurisu |
-| `fix: prompt v1.3.1` | Cut max_tokens 600→220; terse 1-2 sentence replies; shorten few-shot examples; add `scripts/test-emotions.mjs` |
-| `fix: in-world error message + switch model to qwen3-32b` | Replace `[CONNECTION ERROR: ...]` bubble with `...[ TRANSMISSION INTERRUPTED ]`; API 500 returns plain text |
-| `chore: switch model to llama-4-scout` | qwen3-32b abandoned (slow — thinking mode); switched to `meta-llama/llama-4-scout-17b-16e-instruct` |
-| `feat: step 1.3e -- Edge TTS, prompt v1.4.0, avatar pendulum fix` | Replace Web Speech API with `edge-tts-universal`; new `/api/amadeus/tts` route; prompt v1.4.0 with 10 few-shot pairs; fix Embrassed Z-rotation pendulum → slow X-sway; emotion accuracy 9→14-15/20 |
-| `chore: remove vrm artifacts, unused deps, and default next.js assets` | Uninstall `@pixiv/three-vrm` (14 packages); delete `kurisu.vrm` (10.7 MB), original `CRS_*` sprite sources, junk Drive-pack files, default Next.js SVGs; update `AGENTS.md` stack table |
-
----
-
-## Current LLM Setup
+## LLM Setup
 
 | Key | Value |
 |---|---|
-| Provider | Google AI Studio (Gemini) — OpenAI-compatible endpoint |
+| Provider | Google AI Studio — OpenAI-compat endpoint |
 | Model | `gemini-3.5-flash` |
-| `max_tokens` | 220 |
-| `temperature` | 0.85 |
-| Free tier limit | 1 M TPD (10× Groq free tier) |
-| Prompt version | v1.4.0 |
-| Few-shot pairs | 10 (in `AMADEUS_FEW_SHOT`, injected between system + user messages) |
-| SDK | `groq-sdk` pointed at Gemini baseURL — route handlers unchanged |
-
-**Tested emotion accuracy (automated):** 14-15/20 (70-75%) on `test-emotions.mjs` (measured with Llama 4; re-run to confirm with Gemini).
-Known hard ceiling: `Calm` vs `Tired` on same topic needs conversation history. `Very Serious` vs `Serious` near-identical. Remaining misfires acceptable for real usage.
+| SDK | `groq-sdk` pointed at Gemini `baseURL` (`lib/llm.ts`) |
+| `max_tokens` | 220 · `temperature` 0.85 |
+| Prompt | v1.4.0, 10 few-shot pairs (`lib/prompts/amadeus.ts`) |
+| Emotion accuracy | 14-15/20 (70-75%) — re-run `scripts/test-emotions.mjs` to confirm with Gemini |
 
 ---
 
-## Current State of `components/AmadeusAvatar.tsx`
+## Next Step Detail — 1.3g Full Sprite Usage
 
-- **Sprite system**: `useEffect` loads `kurisu-{slug}.png` + `kurisu-{slug}-open.png` via `THREE.TextureLoader` per emotion. Falls back to `/kurisu.png` on 404.
-- **Mouth toggle**: During `isSpeaking`, alternates base ↔ open texture at 5 Hz (`Math.sin(t * Math.PI * 10) > 0`)
-- **Body animation**: Y-float on all emotions. X-shake for `Angry` (9 Hz). Slow X-sway for `Embrassed`/`Very Embrassed` (1.8/2.5 Hz). `Sad`/`Sleep`/`Tired` have reduced opacity. No Z rotation — flat sprites tilt unnaturally when rotated.
-- **Canvas**: `gl={{ alpha: true }}`, camera at `[0, 0, 3]`, fov 60
-- **Plane**: `3.0 × 1.81` (852/1411 aspect ratio — matches actual CRS_JL sprite dimensions)
-- **Color fix**: `t.colorSpace = THREE.SRGBColorSpace` on all loaded textures
-- **CRT fix**: Avatar div has `zIndex: 10` to sit above `.crt-frame::after` scanline overlay
-- Dynamically imported in `amadeus/page.tsx` with `ssr: false`
+All 20 emotions reachable via two sources feeding the same `setEmotion()`:
 
-## Current State of `app/amadeus/page.tsx`
-
-- **TTS**: `speakEdgeTTS()` — POST to `/api/amadeus/tts`, receive `audio/mpeg` blob, play via `new Audio(url)`. `audioRef` tracks active audio element for clean stop/cancel.
-- **isSpeaking**: Set on `audio.play()` start, cleared on `audio.onended` — accurately tracks actual playback (not fetch start).
-- **Voice toggle**: `stopAudio()` pauses current audio and revokes blob URL. No memory leaks.
-- **History**: `localStorage` (key `amadeus_history_v1`, last 40 messages). Supabase persistence wired in step 1.4.
-- **Emotion source**: Currently LLM-only via `X-Amadeus-Emotion` header. Step 1.3g adds frontend-driven emotion for system events (see below).
-
-## Full Sprite Usage Plan (Step 1.3g)
-
-All 20 sprites must be reachable. Two emotion sources feed the same `setEmotion()` call:
-1. **LLM** — `X-Amadeus-Emotion` header (existing)
-2. **Frontend** — direct `setEmotion()` for UI/system events (new)
-
-| Trigger | Sprite | Where |
+| Trigger | Sprite | Where in code |
 |---|---|---|
-| Request starts (loading) | `Calm` | `sendMessage()` — before fetch |
-| LLM reply arrives | LLM-chosen emotion | `X-Amadeus-Emotion` header (existing) |
-| API error / network fail | `Closed Sleep` | `catch` block in `sendMessage()` |
-| Rate limit (429) | `Tired` | check `res.status === 429` before throw |
-| Page load / connection established | `Wink` | `status` transitions to `"online"` |
-| Idle 3 min (no typing) | `Tired` | `setTimeout` reset on every keystroke |
+| Request starts | `Calm` | `sendMessage()` before fetch |
+| LLM reply | LLM-chosen | `X-Amadeus-Emotion` header (existing) |
+| API error | `Closed Sleep` | `catch` block |
+| Rate limit 429 | `Tired` | `res.status === 429` check |
+| Page connects | `Wink` → reverts after 1.5s | `status === "online"` |
+| Idle 3 min | `Tired` | `setTimeout`, reset on keystroke |
 | Idle 8 min | `Sleep` | second `setTimeout` |
-| User types after sleeping | `Surprise` | clear idle timers, `setEmotion("Surprise")` |
-| Clear history / end session | `Back` | `clearHistory()` |
+| User wakes | `Surprise` → reverts after 2s | clear timers on input |
+| Clear history | `Back` → reverts after 2s | `clearHistory()` |
 
-Implementation notes:
-- Idle timers: two `useRef<ReturnType<typeof setTimeout>>` — reset in `handleKeyDown` and `sendMessage`. Clear in cleanup `useEffect`.
-- `Surprise` should last ~2s then revert to `Default` before the LLM reply lands.
-- `Wink` on connect should last ~1.5s then fade to `Default`.
-- `Back` on clear history should last ~2s then fade to `Default`.
-
-## Sprite Setup
-
-- Files live in `public/sprites/` (gitignored)
-- Rename script: `node scripts/rename-sprites.mjs <path>` maps `CRS_JL*.png` → `kurisu-{slug}.png`
-- Source: Google Drive pack (Large distance sprites, mouth variants 00=closed, 02=open)
-- All 20 emotions covered; 19 have mouth-open variants (Back has one file only)
-- `public/sprites/.gitkeep` is committed; all PNGs/GIFs/WAVs are gitignored
+Implementation: two `useRef<ReturnType<typeof setTimeout>>` idle timers; clear in cleanup `useEffect`.
 
 ---
 
-## Existing File Map
+## File Map
 
 ```
 app/
-  (marketing)/page.tsx      ← Landing — world line meter + 3 gadget cards
-  amadeus/page.tsx          ← Video-call UI ("use client"); Edge TTS, emotion state, localStorage history
-  api/amadeus/chat/route.ts ← Streaming route; buffers first chunks to extract [Emotion];
-                               sends X-Amadeus-Emotion header before streaming clean text
-  api/amadeus/tts/route.ts  ← POST { text } → audio/mpeg via edge-tts-universal (en-US-JennyNeural)
-  layout.tsx                ← Site shell: nav header + footer
+  (marketing)/page.tsx       ← Landing page
+  amadeus/page.tsx           ← Video-call UI (emotion state, TTS, localStorage history)
+  api/amadeus/chat/route.ts  ← Streaming route; extracts [Emotion] tag → X-Amadeus-Emotion header
+  api/amadeus/tts/route.ts   ← Edge TTS → audio/mpeg
 
 components/
-  AmadeusAvatar.tsx         ← Sprite avatar: emotion slug → texture swap + 5Hz mouth toggle
-  GadgetCard.tsx            ← Landing page gadget card
-  WorldLineMeter.tsx        ← Animated divergence meter in the nav
+  AmadeusAvatar.tsx          ← R3F sprite avatar (20 emotions, 5Hz mouth toggle, per-emotion body anim)
 
 lib/
-  llm.ts                    ← LLM client (lazy init); LLM_MODEL constant here
-  prompts/amadeus.ts        ← Prompt v1.4.0 + AMADEUS_FEW_SHOT (10 pairs) + CANONICAL_EMOTIONS + Zod schemas
-  supabase/
-    server.ts               ← Server-side Supabase client (reads cookies)
-    client.ts               ← Browser-side Supabase client (public anon key)
+  llm.ts                     ← Gemini client (lazy init); LLM_MODEL = "gemini-3.5-flash"
+  prompts/amadeus.ts         ← Prompt v1.4.0 + few-shot pairs + CANONICAL_EMOTIONS
+  supabase/server.ts         ← Server Supabase client
+  supabase/client.ts         ← Browser Supabase client
 
 public/
-  kurisu.png                ← Fallback avatar (used when sprites not found)
-  sprites/                  ← Gitignored PNGs; .gitkeep committed
-    kurisu-{slug}.png       ← Closed-mouth expression per emotion (20 files)
-    kurisu-{slug}-open.png  ← Open-mouth talking variant (19 files)
+  kurisu.png                 ← Fallback avatar
+  sprites/                   ← Gitignored; kurisu-{slug}.png + kurisu-{slug}-open.png (20 emotions)
 
 scripts/
-  rename-sprites.mjs        ← Maps CRS_JL*.png from Drive pack → kurisu-{slug}.png
-  test-emotions.mjs         ← Fires 20 trigger messages at local API; checks X-Amadeus-Emotion header
-
-constants/theme.ts          ← Color tokens, font variables, motion presets
-styles/crt.css              ← .crt-frame .crt-scanlines .crt-flicker .glitch-text
-supabase/migrations/        ← (empty — first migration in step 1.4)
+  rename-sprites.mjs         ← Maps CRS_JL*.png → kurisu-{slug}.png
+  test-emotions.mjs          ← Automated 20-message emotion accuracy test
 ```
 
 ---
 
-## Key env vars
+## Env Vars
 
 ```
-GEMINI_API_KEY=                       # set in .env.local — Google AI Studio
-NEXT_PUBLIC_SUPABASE_URL=             # needed for 1.4
-NEXT_PUBLIC_SUPABASE_ANON_KEY=        # needed for 1.4
-SUPABASE_SERVICE_ROLE_KEY=            # needed for 1.4 (server only, never NEXT_PUBLIC_)
+GEMINI_API_KEY=               # Google AI Studio
+NEXT_PUBLIC_SUPABASE_URL=     # step 1.4
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=    # server only
 ```
 
 ---
 
-## Known Issues / Watch-outs
+## Watch-outs
 
-- Sprites are loaded per-emotion via `THREE.TextureLoader` in `useEffect`. On slow connections there's a brief flash of the fallback `kurisu.png` between emotion changes until the new sprite loads. Can fix with preloading if needed.
-- Dev server on port 3000 with Turbopack (`npm run dev`).
-- `THREE.Clock` deprecation warning in browser console — from R3F internals, harmless.
-- `alphaTest={0.1}` on `meshBasicMaterial` cuts out semi-transparent pixels. VN sprites have transparent backgrounds — works correctly.
-- Gemini free tier: 1M TPD / 1,500 RPD. Running `test-emotions.mjs` (20 requests) burns ~1,500 tokens — negligible, but run on demand not in a loop.
-- **Do not use `Invoke-WebRequest` to test the API** — it hangs on chunked streaming responses. Use `node -e "fetch(...)"` instead.
-- Edge TTS (`edge-tts-universal`) adds ~1s latency before audio starts (TTS round-trip to Microsoft's servers). `isSpeaking` triggers on playback start, not fetch start — avatar mouth stays accurate.
-- TTS Phase 2 upgrade: `Loke-60000/christina-TTS` (Qwen3-TTS 0.9B fine-tuned on Kurisu's English voice). Requires Python sidecar + CUDA. `/api/amadeus/tts` should proxy to `CHRISTINA_TTS_URL` env var when set, falling back to Edge TTS.
+- Sprites flash briefly on emotion change (TextureLoader per emotion, no preload)
+- `THREE.Clock` deprecation warning in console — R3F internals, harmless
+- **Don't use `Invoke-WebRequest`** for API testing — hangs on chunked streams. Use `node -e "fetch(...)"`.
+- Edge TTS adds ~1s latency. `isSpeaking` fires on `audio.play()`, not fetch start.
+- Sprites in `public/sprites/` must be set up locally: `node scripts/rename-sprites.mjs <path>`
 
 ---
 
 ## Step 1.4 Plan (after 1.3g)
 
-| Sub-task | File(s) |
-|---|---|
-| SQL migration — `amadeus_messages` table + RLS | `supabase/migrations/0001_amadeus_messages.sql` |
-| Server Supabase client plumbing | `lib/supabase/server.ts` (already exists) |
-| Auth UI (sign-in modal or page) | `components/AuthModal.tsx` or `app/auth/` |
-| Swap `localStorage` → Supabase on sign-in | `app/amadeus/page.tsx` — conditional persist |
-| Guest mode stays | `localStorage` still used when not signed in |
-
-Use `fgl-new-migration` skill before writing any SQL.
-Use `fgl-new-component` skill before building `AuthModal`.
+- SQL migration: `amadeus_messages` table + RLS → use `fgl-new-migration` skill
+- Auth modal: `components/AuthModal.tsx` → use `fgl-new-component` skill
+- Swap `localStorage` → Supabase when signed in; guest mode stays on localStorage
 
 ---
 
